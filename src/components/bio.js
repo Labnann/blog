@@ -46,7 +46,7 @@ const Bio = () => {
         <p>
           Written by <strong>{author.name}</strong> {author?.summary || null}
           {` `}
-          <a href={`https://www.github.com/${social?.twitter || ``}`}>
+          <a target="_parent" href={`https://www.github.com/${social?.twitter || ``}`}>
             You should follow them on Github 
           </a>
         </p>
