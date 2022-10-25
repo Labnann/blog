@@ -1,0 +1,15 @@
+diff --git a/static/admin/config.yml b/static/admin/config.yml
+index 4c87029..fed12e1 100644
+--- a/static/admin/config.yml
++++ b/static/admin/config.yml
+@@ -1,7 +1,7 @@
+ backend:
+-  name: github
+-  repo: Labnann/blog 
+-  branch: main
++  name: proxy
++  proxy_url: http://localhost:8081/api/v1
++  branch: local
+ 
+ media_folder: "static/img"
+ public_folder: "/img"
