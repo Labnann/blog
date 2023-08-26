@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Gatsby Starter Blog RSS Feed]]></title><description><![CDATA[Just a place to store my blogs, for now]]></description><link>https://labnan-blog.netlifycms.app</link><generator>GatsbyJS</generator><lastBuildDate>Sat, 26 Aug 2023 20:16:33 GMT</lastBuildDate><item><title><![CDATA[Google Summer of Code Journey:  Hacking Libtool: Part 1]]></title><description><![CDATA[While working in VLC.js for VideoLAN in Google Summer of Code 2023, I came
-accross an interesting problem. You see VLC uses GNU Autotools to…]]></description><link>https://labnan-blog.netlifycms.app/blog/gsoc-libtool-part1/</link><guid isPermaLink="false">https://labnan-blog.netlifycms.app/blog/gsoc-libtool-part1/</guid><pubDate>Tue, 15 Aug 2023 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;While working in VLC.js for VideoLAN in Google Summer of Code 2023, I came
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Gatsby Starter Blog RSS Feed]]></title><description><![CDATA[Just a place to store my blogs, for now]]></description><link>http://github.com/dylang/node-rss</link><generator>GatsbyJS</generator><lastBuildDate>Sat, 26 Aug 2023 20:24:53 GMT</lastBuildDate><item><title><![CDATA[Google Summer of Code Journey:  Hacking Libtool: Part 1]]></title><description><![CDATA[While working in VLC.js for VideoLAN in Google Summer of Code 2023, I came
+accross an interesting problem. You see VLC uses GNU Autotools to…]]></description><link>null/blog/gsoc-libtool-part1/</link><guid isPermaLink="false">null/blog/gsoc-libtool-part1/</guid><pubDate>Tue, 15 Aug 2023 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;While working in VLC.js for VideoLAN in Google Summer of Code 2023, I came
 accross an interesting problem. You see VLC uses GNU Autotools to
 create their compilation script, like most other C/C++ projects. The
 compilation process is simple, if all dependencies are installed.&lt;/p&gt;
@@ -84,7 +84,7 @@ mechanisms.&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;Stay tuned for the part two! And stay safe.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Linux Kernel Bug Fixing - My Experience]]></title><description><![CDATA[For the past one year, I knew about Linux Kernel Mentorship Program
 which I had been wishing to join. And this summer as my university
-asks…]]></description><link>https://labnan-blog.netlifycms.app/blog/my-experience2/</link><guid isPermaLink="false">https://labnan-blog.netlifycms.app/blog/my-experience2/</guid><pubDate>Sat, 27 Aug 2022 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;For the past one year, I knew about Linux Kernel Mentorship Program
+asks…]]></description><link>null/blog/my-experience2/</link><guid isPermaLink="false">null/blog/my-experience2/</guid><pubDate>Sat, 27 Aug 2022 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;For the past one year, I knew about Linux Kernel Mentorship Program
 which I had been wishing to join. And this summer as my university
 asks me for gaining industry level knowledge, I decided why not now?&lt;/p&gt;
 &lt;p&gt;On 8th May, I applied for the Mentorship program. &quot;Will they take
@@ -205,7 +205,7 @@ wonderful project. So, this is not the ending, rather the beginning.&lt;/p&gt;
 &lt;p&gt;By now I have three patches accepted in Linux and few rejected as well.
 With all of them being very informative. And the big news is Linux 6.0
 is going to be released soon, with my code running in it too.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Linux Kernel Mentorship Program: How They Prepared Me For Kernel Development Before I Even Got Accepted]]></title><description><![CDATA[There is a general belief, that in an internship, unless it is long
-you will spend your time learning, and will probably never get to work…]]></description><link>https://labnan-blog.netlifycms.app/blog/how-lkmp-prepares-candidates/</link><guid isPermaLink="false">https://labnan-blog.netlifycms.app/blog/how-lkmp-prepares-candidates/</guid><pubDate>Thu, 25 Aug 2022 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;There is a general belief, that in an internship, unless it is long
+you will spend your time learning, and will probably never get to work…]]></description><link>null/blog/how-lkmp-prepares-candidates/</link><guid isPermaLink="false">null/blog/how-lkmp-prepares-candidates/</guid><pubDate>Thu, 25 Aug 2022 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;There is a general belief, that in an internship, unless it is long
 you will spend your time learning, and will probably never get to work
 in any important ongoing project. Because getting acquainted with a
 new project is tough as they are pretty large and combine years of
@@ -238,7 +238,7 @@ This not only efficiently tests candidates if they have the correct
 skills for the work, but also gives them flavor of their work. Which
 in turns make them curious, confident, passionate and eventually
 they contribute in the project.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[New Beginnings]]></title><description><![CDATA[Far far away, behind the word mountains, far from the countries Vokalia and
-Consonantia, there live the blind texts. Separated they live in…]]></description><link>https://labnan-blog.netlifycms.app/new-beginnings/</link><guid isPermaLink="false">https://labnan-blog.netlifycms.app/new-beginnings/</guid><pubDate>Thu, 28 May 2015 22:40:32 GMT</pubDate><content:encoded>&lt;p&gt;Far far away, behind the word mountains, far from the countries Vokalia and
+Consonantia, there live the blind texts. Separated they live in…]]></description><link>null/new-beginnings/</link><guid isPermaLink="false">null/new-beginnings/</guid><pubDate>Thu, 28 May 2015 22:40:32 GMT</pubDate><content:encoded>&lt;p&gt;Far far away, behind the word mountains, far from the countries Vokalia and
 Consonantia, there live the blind texts. Separated they live in Bookmarksgrove
 right at the coast of the Semantics, a large language ocean. A small river named
 Duden flows by their place and supplies it with the necessary regelialia.&lt;/p&gt;
@@ -330,12 +330,12 @@ to its own, safe country. But nothing the copy said could convince her and so it
 didn’t take long until a few insidious Copy Writers ambushed her, made her drunk
 with Longe and Parole and dragged her into their agency, where they abused her
 for their projects again and again.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[My Second Post!]]></title><description><![CDATA[Wow! I love blogging so much already. Did you know that "despite its name, salted duck eggs can also be made from
-chicken eggs, though the…]]></description><link>https://labnan-blog.netlifycms.app/my-second-post/</link><guid isPermaLink="false">https://labnan-blog.netlifycms.app/my-second-post/</guid><pubDate>Wed, 06 May 2015 23:46:37 GMT</pubDate><content:encoded>&lt;p&gt;Wow! I love blogging so much already.&lt;/p&gt;
+chicken eggs, though the…]]></description><link>null/my-second-post/</link><guid isPermaLink="false">null/my-second-post/</guid><pubDate>Wed, 06 May 2015 23:46:37 GMT</pubDate><content:encoded>&lt;p&gt;Wow! I love blogging so much already.&lt;/p&gt;
 &lt;p&gt;Did you know that &quot;despite its name, salted duck eggs can also be made from
 chicken eggs, though the taste and texture will be somewhat different, and the
 egg yolk will be less rich.&quot;?
 (&lt;a href=&quot;https://en.wikipedia.org/wiki/Salted_duck_egg&quot;&gt;Wikipedia Link&lt;/a&gt;)&lt;/p&gt;
-&lt;p&gt;Yeah, I didn&apos;t either.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Hello World]]></title><description><![CDATA[This is my first post on my new fake blog! How exciting! I'm sure I'll write a lot more interesting things in the future. Oh, and here's a…]]></description><link>https://labnan-blog.netlifycms.app/hello-world/</link><guid isPermaLink="false">https://labnan-blog.netlifycms.app/hello-world/</guid><pubDate>Fri, 01 May 2015 22:12:03 GMT</pubDate><content:encoded>&lt;p&gt;This is my first post on my new fake blog! How exciting!&lt;/p&gt;
+&lt;p&gt;Yeah, I didn&apos;t either.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Hello World]]></title><description><![CDATA[This is my first post on my new fake blog! How exciting! I'm sure I'll write a lot more interesting things in the future. Oh, and here's a…]]></description><link>null/hello-world/</link><guid isPermaLink="false">null/hello-world/</guid><pubDate>Fri, 01 May 2015 22:12:03 GMT</pubDate><content:encoded>&lt;p&gt;This is my first post on my new fake blog! How exciting!&lt;/p&gt;
 &lt;p&gt;I&apos;m sure I&apos;ll write a lot more interesting things in the future.&lt;/p&gt;
 &lt;p&gt;Oh, and here&apos;s a great quote from this Wikipedia on
 &lt;a href=&quot;https://en.wikipedia.org/wiki/Salted_duck_egg&quot;&gt;salted duck eggs&lt;/a&gt;.&lt;/p&gt;
