@@ -1,4 +1,66 @@
-<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Gatsby Starter Blog RSS Feed]]></title><description><![CDATA[Just a place to store my blogs, for now]]></description><link>http://github.com/dylang/node-rss</link><generator>GatsbyJS</generator><lastBuildDate>Sat, 26 Aug 2023 20:40:04 GMT</lastBuildDate><item><title><![CDATA[Google Summer of Code Journey:  Hacking Libtool: Part 1]]></title><description><![CDATA[While working in VLC.js for VideoLAN in Google Summer of Code 2023, I came
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Gatsby Starter Blog RSS Feed]]></title><description><![CDATA[Just a place to store my blogs, for now]]></description><link>http://github.com/dylang/node-rss</link><generator>GatsbyJS</generator><lastBuildDate>Sat, 26 Aug 2023 20:43:26 GMT</lastBuildDate><item><title><![CDATA[Google Summer of Code - My work At VideoLan]]></title><description><![CDATA[My work at Google Summer of Code, to simply explain is: enabling dynamic
+loading for wasm32-unknown-emscripten. To understand it, we need to…]]></description><link>null/gsoc/my-work-in-gsoc-at-videolan/</link><guid isPermaLink="false">null/gsoc/my-work-in-gsoc-at-videolan/</guid><pubDate>Sat, 26 Aug 2023 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;My work at Google Summer of Code, to simply explain is: enabling dynamic
+loading for wasm32-unknown-emscripten. To understand it, we need to delve
+into how VLC&apos;s plugins are loaded.&lt;/p&gt;
+&lt;p&gt;All vlc modules are declared in the source code using the series of macro
+that starts with vlc_module_begin() and ends with vlc_module_end().&lt;/p&gt;
+&lt;p&gt;For example:&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;vlc_module_begin()
+    set_shortname(N_(&quot;hello&quot;))
+    set_description(N_(&quot;Hello World Module&quot;))
+    set_capability(&quot;dummy&quot;, 0)
+    set_callbacks(Open, Close)
+vlc_module_end()&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In this example callbacks we define how the module is going to be initiated.
+We give it name and capability (category) and how the module will be
+closed.&lt;/p&gt;
+&lt;p&gt;If we see the definition vlc_module_begin macro, we will find that
+it is expanded into a function named vlc_entry which takes a callback
+vlc_set and opaque as input.&lt;/p&gt;
+&lt;p&gt;Now let us look into bank.c. In case of shared loading, in module_InitDynamic
+we find that the function is loaded from a dynamic plugin file using dlopen.
+Then using dlsym, the vlc_entry function is searched and resolved.
+In case of static module, there is a global list of static entries
+named vlc_static_modules.&lt;/p&gt;
+&lt;p&gt;In both cases, upon finding the entry function, which we know takes a callback,
+it is passed into the vlc_plugin_describe function. From here,
+the entry function is called with the callback vlc_plugin_desc_cb
+and opaque. Where opaque, in this context is a newly initiated
+vlc_plugin_t instance.&lt;/p&gt;
+&lt;p&gt;If we look into vlc_plugin_desc_cb we can see that there is a switch
+statement, that switches a property and based on the property it runs
+some code.&lt;/p&gt;
+&lt;p&gt;So, the entry function now has the ability to use the callback vlc_set
+to invoke vlc_plugin_desc_cb and do various things like this:&lt;/p&gt;
+&lt;p&gt;vlc_set (opaque, NULL, VLC_MODULE_CREATE)&lt;/p&gt;
+&lt;p&gt;To simplify this call, there are helper functions like vlc_plugin_set,
+vlc_module_set, vlc_config_set. But they all in the end invokes this.
+This way the plugin describes itself and all its capabilities until
+it hits the vlc_module_end ie. the return statement.&lt;/p&gt;
+&lt;p&gt;But where is the point that decides whether to load with dynamic module
+or shared module? To answer this we have to look into the function
+module_loadPlugins. This function itself is called from libvlc_new
+at some point which is exposed to the front end. During compilation
+there is a configuration variable named HAVE_DYNAMIC_PLUGINS.&lt;/p&gt;
+&lt;p&gt;My work is based on this, to get &quot;HAVE_DYNAMIC_PLUGINS&quot; enabled for
+wasm32-emscripten. Which will cause module_loadPlugins to call
+AllocateAllPlugins which recursively looking for the modules in the
+given path passed via environment variables or other methods from the
+front end.&lt;/p&gt;
+&lt;p&gt;Now to enable this I had to make changes into libtool to allow
+it inform it about how to &quot;compile&quot; shared modules.&lt;/p&gt;
+&lt;p&gt;Also it turns out that several features of emscripten are not quite
+ready yet for this purpose. For example, EM_JS is not supported
+in emscripten shared modules. EM_JS is a macro that allows one to
+execute JavaScript inside web assembly. Also there are issues with
+linker in emscripten linker for compiling C++ sources with shared
+modules. Finally, emscripten&apos;s implementation of opendir only works
+with WasmFS. WasmFS is a virtual filesystem for file operations
+provided by emscripten. WasmFS is not linked with the server, so
+actual directory search is not conducted by opendir.&lt;/p&gt;
+&lt;p&gt;To mitigate this, I added a JavaScript method that mounts the plugin
+directory to WasmFS. After that libvlc_new is initiated and module loading
+begins.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Google Summer of Code Journey:  Hacking Libtool: Part 1]]></title><description><![CDATA[While working in VLC.js for VideoLAN in Google Summer of Code 2023, I came
 accross an interesting problem. You see VLC uses GNU Autotools to…]]></description><link>null/blog/gsoc-libtool-part1/</link><guid isPermaLink="false">null/blog/gsoc-libtool-part1/</guid><pubDate>Tue, 15 Aug 2023 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;While working in VLC.js for VideoLAN in Google Summer of Code 2023, I came
 accross an interesting problem. You see VLC uses GNU Autotools to
 create their compilation script, like most other C/C++ projects. The
@@ -204,69 +266,7 @@ with Kernel Development and we can always keep contributing to this
 wonderful project. So, this is not the ending, rather the beginning.&lt;/p&gt;
 &lt;p&gt;By now I have three patches accepted in Linux and few rejected as well.
 With all of them being very informative. And the big news is Linux 6.0
-is going to be released soon, with my code running in it too.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Google Summer of Code - My work At VideoLan]]></title><description><![CDATA[My work at Google Summer of Code, to simply explain is: enabling dynamic
-loading for wasm32-unknown-emscripten. To understand it, we need to…]]></description><link>null/gsoc/my-work-in-gsoc-at-videolan/</link><guid isPermaLink="false">null/gsoc/my-work-in-gsoc-at-videolan/</guid><pubDate>Sat, 27 Aug 2022 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;My work at Google Summer of Code, to simply explain is: enabling dynamic
-loading for wasm32-unknown-emscripten. To understand it, we need to delve
-into how VLC&apos;s plugins are loaded.&lt;/p&gt;
-&lt;p&gt;All vlc modules are declared in the source code using the series of macro
-that starts with vlc_module_begin() and ends with vlc_module_end().&lt;/p&gt;
-&lt;p&gt;For example:&lt;/p&gt;
-&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;vlc_module_begin()
-    set_shortname(N_(&quot;hello&quot;))
-    set_description(N_(&quot;Hello World Module&quot;))
-    set_capability(&quot;dummy&quot;, 0)
-    set_callbacks(Open, Close)
-vlc_module_end()&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;In this example callbacks we define how the module is going to be initiated.
-We give it name and capability (category) and how the module will be
-closed.&lt;/p&gt;
-&lt;p&gt;If we see the definition vlc_module_begin macro, we will find that
-it is expanded into a function named vlc_entry which takes a callback
-vlc_set and opaque as input.&lt;/p&gt;
-&lt;p&gt;Now let us look into bank.c. In case of shared loading, in module_InitDynamic
-we find that the function is loaded from a dynamic plugin file using dlopen.
-Then using dlsym, the vlc_entry function is searched and resolved.
-In case of static module, there is a global list of static entries
-named vlc_static_modules.&lt;/p&gt;
-&lt;p&gt;In both cases, upon finding the entry function, which we know takes a callback,
-it is passed into the vlc_plugin_describe function. From here,
-the entry function is called with the callback vlc_plugin_desc_cb
-and opaque. Where opaque, in this context is a newly initiated
-vlc_plugin_t instance.&lt;/p&gt;
-&lt;p&gt;If we look into vlc_plugin_desc_cb we can see that there is a switch
-statement, that switches a property and based on the property it runs
-some code.&lt;/p&gt;
-&lt;p&gt;So, the entry function now has the ability to use the callback vlc_set
-to invoke vlc_plugin_desc_cb and do various things like this:&lt;/p&gt;
-&lt;p&gt;vlc_set (opaque, NULL, VLC_MODULE_CREATE)&lt;/p&gt;
-&lt;p&gt;To simplify this call, there are helper functions like vlc_plugin_set,
-vlc_module_set, vlc_config_set. But they all in the end invokes this.
-This way the plugin describes itself and all its capabilities until
-it hits the vlc_module_end ie. the return statement.&lt;/p&gt;
-&lt;p&gt;But where is the point that decides whether to load with dynamic module
-or shared module? To answer this we have to look into the function
-module_loadPlugins. This function itself is called from libvlc_new
-at some point which is exposed to the front end. During compilation
-there is a configuration variable named HAVE_DYNAMIC_PLUGINS.&lt;/p&gt;
-&lt;p&gt;My work is based on this, to get &quot;HAVE_DYNAMIC_PLUGINS&quot; enabled for
-wasm32-emscripten. Which will cause module_loadPlugins to call
-AllocateAllPlugins which recursively looking for the modules in the
-given path passed via environment variables or other methods from the
-front end.&lt;/p&gt;
-&lt;p&gt;Now to enable this I had to make changes into libtool to allow
-it inform it about how to &quot;compile&quot; shared modules.&lt;/p&gt;
-&lt;p&gt;Also it turns out that several features of emscripten are not quite
-ready yet for this purpose. For example, EM_JS is not supported
-in emscripten shared modules. EM_JS is a macro that allows one to
-execute JavaScript inside web assembly. Also there are issues with
-linker in emscripten linker for compiling C++ sources with shared
-modules. Finally, emscripten&apos;s implementation of opendir only works
-with WasmFS. WasmFS is a virtual filesystem for file operations
-provided by emscripten. WasmFS is not linked with the server, so
-actual directory search is not conducted by opendir.&lt;/p&gt;
-&lt;p&gt;To mitigate this, I added a JavaScript method that mounts the plugin
-directory to WasmFS. After that libvlc_new is initiated and module loading
-begins.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Linux Kernel Mentorship Program: How They Prepared Me For Kernel Development Before I Even Got Accepted]]></title><description><![CDATA[There is a general belief, that in an internship, unless it is long
+is going to be released soon, with my code running in it too.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Linux Kernel Mentorship Program: How They Prepared Me For Kernel Development Before I Even Got Accepted]]></title><description><![CDATA[There is a general belief, that in an internship, unless it is long
 you will spend your time learning, and will probably never get to work…]]></description><link>null/blog/how-lkmp-prepares-candidates/</link><guid isPermaLink="false">null/blog/how-lkmp-prepares-candidates/</guid><pubDate>Thu, 25 Aug 2022 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;There is a general belief, that in an internship, unless it is long
 you will spend your time learning, and will probably never get to work
 in any important ongoing project. Because getting acquainted with a
