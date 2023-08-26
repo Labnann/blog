@@ -1,0 +1,556 @@
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Gatsby Starter Blog RSS Feed]]></title><description><![CDATA[Just a place to store my blogs, for now]]></description><link>https://labnan-blog.netlifycms.app</link><generator>GatsbyJS</generator><lastBuildDate>Sat, 26 Aug 2023 20:16:33 GMT</lastBuildDate><item><title><![CDATA[Google Summer of Code Journey:  Hacking Libtool: Part 1]]></title><description><![CDATA[While working in VLC.js for VideoLAN in Google Summer of Code 2023, I came
+accross an interesting problem. You see VLC uses GNU Autotools to…]]></description><link>https://labnan-blog.netlifycms.app/blog/gsoc-libtool-part1/</link><guid isPermaLink="false">https://labnan-blog.netlifycms.app/blog/gsoc-libtool-part1/</guid><pubDate>Tue, 15 Aug 2023 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;While working in VLC.js for VideoLAN in Google Summer of Code 2023, I came
+accross an interesting problem. You see VLC uses GNU Autotools to
+create their compilation script, like most other C/C++ projects. The
+compilation process is simple, if all dependencies are installed.&lt;/p&gt;
+&lt;p&gt;First you bootstrap with ./bootstrap
+Then you configure, with ./configure [--enable-params] [--disable-params]
+[other params]
+And finally you compile, using GNU/Make, with the command &apos;make&apos;.&lt;/p&gt;
+&lt;p&gt;In the configure step, among various enable/disable parameters, there
+is one parameter called &quot;shared&quot;. This allows the modules to be compiled
+as dynamic libraries, making them dynamic linkable.&lt;/p&gt;
+&lt;p&gt;So, to enable dynamic linking for wasm32-unknown-emscripten I had to just
+do this one thing: add --enable-shared to the configure parameters,
+right?&lt;/p&gt;
+&lt;p&gt;Wrong! Turns out even if we use --enable-shared in case of wasm32-unknown-emscripten
+it does static compilation! I first realized this when I tried
+--enable-vlc with --enable-shared just to see how it turns out. And
+the configuration fails with the error:
+&quot;VLC is based on plugins. Shared libraries cannot be disabled.&quot;&lt;/p&gt;
+&lt;p&gt;Something is wrong! This is not supposed to happen, I have tried with
+x86_64-linux host, and it works perfectly, then why not in case of
+emscripten? For some reason, shared libraries can not be enabled!
+Time for some investigation.&lt;/p&gt;
+&lt;h4&gt;What and why wasm32-unknown-emscripten?&lt;/h4&gt;
+&lt;p&gt;For that, you have to know what cross compilation triplet is. Briefly saying,
+it is &amp;#x3C;Architecture&gt;-&amp;#x3C;Vendor&gt;-&amp;#x3C;Operating System&gt;, so here wasm32 is the
+architecture here, emscripten is the Operating System taken to be running
+on the browser. VLC.js is basically vlc media player ported to web assembly,
+running with Emscripten in browser, hence we use this.&lt;/p&gt;
+&lt;p&gt;So, the first thing I did was enable building of vlc binaries,  with
+--enable-vlc, as vlc binaries can not be built without dynamic loading
+enabled. There has to be a check there, that makes sure that shared
+modules are enabled.  Opening the configure script and searching for
+&quot;VLC is based on plugins&quot;, we indeed find the condition there:&lt;/p&gt;
+&lt;p&gt;if test &quot;${enable_shared}&quot; = &quot;no&quot; -a &quot;${enable_vlc}&quot; != &quot;no&quot;&lt;/p&gt;
+&lt;p&gt;So, something must have caused enable_shared to be no, But what is it?&lt;/p&gt;
+&lt;p&gt;Something must have assigned enable_shared to be no, so let&apos;s search
+for &quot;enable_shared=no&quot;, and just few lines before the above line, we
+find that:&lt;/p&gt;
+&lt;p&gt;test no = &quot;$can_build_shared&quot; &amp;#x26;&amp;#x26; enable_shared=no&lt;/p&gt;
+&lt;p&gt;So, the value of enable_shared came from can_build_shared, so now we
+search for &quot;can_build_shared=no&quot; to find out that its value came from
+the variable dynamic_linker. And it turns out the value of dynamic_linker
+is pre-assigned based on host_os. For example, if host_os is android,
+dynamic linker is &quot;Android linker&quot; and so on. There seemed to be only
+one purpose of this variable, that is to indicate whether a dynamic linker
+exists for that particular host_os. Which does not exist for the host_os
+I am targetting, &quot;emscripten&quot;.&lt;/p&gt;
+&lt;p&gt;But the name, &quot;Android linker&quot; for android has to come from somewhere.
+The configure script itself is generated from various configure.am files
+when running the bootstrap script as mentioned earlier. So, I make a quick search:&lt;/p&gt;
+&lt;p&gt;git grep -r &quot;Android linker&quot;&lt;/p&gt;
+&lt;p&gt;Only to find nothing. So this value does not exist in the repository as
+a configuration file or anything, rather the value came from outside the
+repository. My mentor Alexandre Janniaux was very helpful to point out
+that the value comes from libtool, and what we can do at this point is to
+hack libtool and add dynamic_linker for emscripten at libtool/m4/libtool.m4
+and use that custom libtool.&lt;/p&gt;
+&lt;p&gt;And in libtool.m4 there it was, the &quot;Android linker&quot; for the host
+linux*android. Taking inspiration from how android section was implemented,
+we added a new host_os named emscripten, with dynamic_linker to be
+&quot;Emscripten linker&quot;, and bingo! After rebootstrapping with the new libtool
+the configuration script ran successfully without switching to static mode
+silently.&lt;/p&gt;
+&lt;h4&gt;What is libttool?&lt;/h4&gt;
+&lt;p&gt;Libtool is a generic library support script that hides the complexity of
+using shared libraries behind a consistent, portable interface. Different
+compilers take different flags, commands or approaches to compile shared
+libraries. Therefore compiler front end becomes inconsistent. Which in terms,
+forces us to use too many unnecessary conditionals in Makefiles. To fix
+this issue, Libtool was developed, it handles the differences internally
+while giving a consistent front end that we can use for the Makefiles,
+enabling us to compile for any other targets whenever needed.&lt;/p&gt;
+&lt;p&gt;Later, we configured emscripten host in libtool to make compilation
+compatible with various features in Emscripten compiler that is different
+from Clang or GCC. The details will be in part two!&lt;/p&gt;
+&lt;p&gt;In this article we learned and reviewed:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;How projects are typically compiled and built and a bit of inner
+mechanisms.&lt;/li&gt;
+&lt;li&gt;Debugging build scripts.&lt;/li&gt;
+&lt;li&gt;How to get started with adding a new host target to libtool.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Stay tuned for the part two! And stay safe.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Linux Kernel Bug Fixing - My Experience]]></title><description><![CDATA[For the past one year, I knew about Linux Kernel Mentorship Program
+which I had been wishing to join. And this summer as my university
+asks…]]></description><link>https://labnan-blog.netlifycms.app/blog/my-experience2/</link><guid isPermaLink="false">https://labnan-blog.netlifycms.app/blog/my-experience2/</guid><pubDate>Sat, 27 Aug 2022 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;For the past one year, I knew about Linux Kernel Mentorship Program
+which I had been wishing to join. And this summer as my university
+asks me for gaining industry level knowledge, I decided why not now?&lt;/p&gt;
+&lt;p&gt;On 8th May, I applied for the Mentorship program. &quot;Will they take
+me?&quot; I wondered. Next two days I did not notice anything to happen.
+On May 10, I went to read the emails and there I realized I have
+tasks assigned to me with the deadline being on May 18. Most of the task
+description scared me and I was like, I have to do these in one week?!
+If you have tough looking enemy in video games at very first mission,
+you are like &quot;Relax! It is the first mission, it must be easy.&quot; I jumped
+with this similar motivation.&lt;/p&gt;
+&lt;p&gt;As you have guessed, these tasks aren&apos;t just any other screening tasks,
+they are a great learning opportunity which teaching me to boot, build,
+break, test, patch the kernel as well as learning to get familiar with
+the release cycle and communications. I worked a lot because to reach
+my target of getting the screening tasks done properly, I had a lot to
+learn in just one week.&lt;/p&gt;
+&lt;p&gt;On May 27, I got the email.
+&quot;Congratulations! We are pleased to let you know that you have been
+accepted as a mentee to the Linux kernel Bug Fixing Summer 2022 mentorship.
+The program administrator will contact you with the next steps.&quot;&lt;/p&gt;
+&lt;p&gt;And my journey as a Linux Kernel Mentee started.&lt;/p&gt;
+&lt;p&gt;Linux Kernel Bug Fixing is a Linux Kernel Mentorship Program designed
+for newcomers in the open source community. I have learned so many
+aspects about computer science, lower level programming, open source
+development, working with community, software engineering, software
+project management, importance of defining and maintaining core
+principles in a project in the past three months.&lt;/p&gt;
+&lt;p&gt;One of the most important things I learned is using the docs and codebase
+itself to learn to work. My mentors always encouraged the documentations
+and the source code that gives relevant information.&lt;/p&gt;
+&lt;p&gt;Some of the parts of the codebase is so
+simple and fascinating. Some codes have some really funny comments.
+It is really satisfying, to see the code building up from top to down
+at the core level of hardware, which we normally do not see in other
+software projects.&lt;/p&gt;
+&lt;p&gt;To try and understand this bug I used this tool named ftrace. I was
+fascinated by the result seeing the internals of how so many functions
+getting executed one after another just to run a simple reproducer. If
+you are interested about ftrace you can learn about it here:
+&lt;a href=&quot;https://www.kernel.org/doc/Documentation/trace/ftrace.txt&quot;&gt;https://www.kernel.org/doc/Documentation/trace/ftrace.txt&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;However my tool of choice was GDB and Qemu. Qemu is an emulator where
+I run the kernel image and using Qemu&apos;s debugger I connect gdb to it
+and start debugging. If the error path is too mysterious for me in that
+I use ftrace.&lt;/p&gt;
+&lt;p&gt;I learned, even if C is not an Object Oriented Language, it is possible
+to write clean codes with it. It does not have Class, but it does
+have structs. The higher level modules define and provide structs
+that have void function pointers. The lower level modules implement
+the functions and inject the pointers into the structs. This way the
+Dependency Injection Principle is kept intact. The lower level module
+itself defines how it needs to be initiated, used, freed and higher
+level module just calls them.&lt;/p&gt;
+&lt;p&gt;Another interesting thing here to take from this project is error
+handling. If an error occurs, a negative error code is propagated
+from deep within the low level to the higher level. Here is an example:&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;struct dev* dev_create(params) 
+{
+ struct *dev = kmalloc(sizeof(struct dev), params.flag)
+ if (!dev)
+    return ERR_PTR(-ENOMEM);
+// initiate things
+ ...
+}
+
+
+int dev_create_user ()
+{
+ ...
+ struct dev = dev_create(params);
+ if (IS_ERR(dev))
+    return (PTR_ERR(dev));
+ ...
+ //do other things.
+
+}&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This way error gets propagated to the surface until it is handled.
+In many cases goto is used for handling errors if it is a bit complex.
+Yes, if used correctly, goto is great for clean coding error handlers
+and not evil.&lt;/p&gt;
+&lt;p&gt;Programmers often insert &lt;code class=&quot;language-text&quot;&gt;BUG_ON&lt;/code&gt;, &lt;code class=&quot;language-text&quot;&gt;WARN_ON&lt;/code&gt;, &lt;code class=&quot;language-text&quot;&gt;ERROR_ON&lt;/code&gt;, &lt;code class=&quot;language-text&quot;&gt;pr_debug&lt;/code&gt;
+etc which only logs when Kernel is compiled with config like Dynamic
+Debug is turned on. These not only increases readability of the code,
+they help fuzzers to try and trigger unintended program paths to find
+out bugs automatically. The kernel has some other dynamic debugging
+tools within it too, like KASAN which is used to detect out of bounds
+access and use after free, KCSAN for finding data races. Also KMSAN
+which is not in the upstream yet, for finding uninit variables.&lt;/p&gt;
+&lt;p&gt;The bugs I tried to solve are triggered by syzkaller dynamically or
+static analysis tools like coverity uncovered some potential bugs.
+So my task description was easy, try to fix the bugs and let the
+mentors know if any difficulties are faced. Everyday I went to Syzbot,
+look through the issues that are probably valid and choose one or two
+bugs that has reproducer and try to find out what causes the problem
+and what could be the solution to the problem.&lt;/p&gt;
+&lt;p&gt;Here is the link to Syzbot, if you are interested:
+&lt;a href=&quot;https://syzkaller.appspot.com/upstream&quot;&gt;https://syzkaller.appspot.com/upstream&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;And here is the Coverity link for Linux Bugs:
+&lt;a href=&quot;https://scan.coverity.com/projects/linux&quot;&gt;https://scan.coverity.com/projects/linux&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Linux Kernel is a complicated project. Often It was hard to come up with
+the right question to ask the mentors. So I had to self study, buy one
+or two books just to learn what could be the right term to use. But
+that is not all. The thing about open source is, it is not just the
+designated mentors that help, rather everyone helps. I send a patch
+that might be solution and people working from that area comments on
+my patches. I get to ask questions about why they think so and they
+are really helpful and considering enough to answer these questions. This
+is one of the most wonderful experiences to me. They do not care about
+age, race, gender, ethnicity, color or religion. The open source culture
+is truly awesome.&lt;/p&gt;
+&lt;p&gt;Often my fellow mentees did some very cool discussions. Those were
+very informative and fun. It was a great experience to meet, learn
+and work with people from different parts of the world. Every day I
+is something new to learn.&lt;/p&gt;
+&lt;p&gt;And before I could understand it, the ending of this amazing adventure
+arrived. But as our mentor said, the purpose was to get us started,
+with Kernel Development and we can always keep contributing to this
+wonderful project. So, this is not the ending, rather the beginning.&lt;/p&gt;
+&lt;p&gt;By now I have three patches accepted in Linux and few rejected as well.
+With all of them being very informative. And the big news is Linux 6.0
+is going to be released soon, with my code running in it too.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Linux Kernel Mentorship Program: How They Prepared Me For Kernel Development Before I Even Got Accepted]]></title><description><![CDATA[There is a general belief, that in an internship, unless it is long
+you will spend your time learning, and will probably never get to work…]]></description><link>https://labnan-blog.netlifycms.app/blog/how-lkmp-prepares-candidates/</link><guid isPermaLink="false">https://labnan-blog.netlifycms.app/blog/how-lkmp-prepares-candidates/</guid><pubDate>Thu, 25 Aug 2022 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;There is a general belief, that in an internship, unless it is long
+you will spend your time learning, and will probably never get to work
+in any important ongoing project. Because getting acquainted with a
+new project is tough as they are pretty large and combine years of
+works.But here in LKMP, I got to send my first patch to production
+AKA upstream kernel before I even started. The Linux kernel is the
+biggest software project on the planet with over 25 million lines of
+code. So how does Linux Kernel Mentorship Program do this?&lt;/p&gt;
+&lt;p&gt;To select the candidate, they give them several tasks to complete. But
+unlike anywhere else, they give enough resource materials to learn
+and complete the tasks at the same time. This learning phase covers
+many important beginner kernel developers guide. So the candidates
+who complete the learning phase are almost ready to hack the kernel.&lt;/p&gt;
+&lt;p&gt;To say generally:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Firstly learn how build the project.&lt;/li&gt;
+&lt;li&gt;Then they teach how to change a small part of the project.&lt;/li&gt;
+&lt;li&gt;Then teach how to create a new working module.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;With these learned, candidates are already knowledgeable about where
+&quot;things start&quot; and &quot;things end&quot;. Then the mentors encourage the
+candidates to: fix some documentation or work on test cases. Fixing
+documentation or tests requires research and the candidate is sort
+of forced to apply themselves to look into the code to understand the
+intention of a code. Therefore the candidate gets to send their
+first patch (git diff) to the community before even getting accepted
+into LKMP. And thus they get hands on experience on development
+process and if the patch is good enough, it gets accepted too.&lt;/p&gt;
+&lt;p&gt;Yes, implementing the process I described up there is not very hard.
+This not only efficiently tests candidates if they have the correct
+skills for the work, but also gives them flavor of their work. Which
+in turns make them curious, confident, passionate and eventually
+they contribute in the project.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[New Beginnings]]></title><description><![CDATA[Far far away, behind the word mountains, far from the countries Vokalia and
+Consonantia, there live the blind texts. Separated they live in…]]></description><link>https://labnan-blog.netlifycms.app/new-beginnings/</link><guid isPermaLink="false">https://labnan-blog.netlifycms.app/new-beginnings/</guid><pubDate>Thu, 28 May 2015 22:40:32 GMT</pubDate><content:encoded>&lt;p&gt;Far far away, behind the word mountains, far from the countries Vokalia and
+Consonantia, there live the blind texts. Separated they live in Bookmarksgrove
+right at the coast of the Semantics, a large language ocean. A small river named
+Duden flows by their place and supplies it with the necessary regelialia.&lt;/p&gt;
+&lt;h2&gt;On deer horse aboard tritely yikes and much&lt;/h2&gt;
+&lt;p&gt;The Big Oxmox advised her not to do so, because there were thousands of bad
+Commas, wild Question Marks and devious Semikoli, but the Little Blind Text
+didn’t listen. She packed her seven versalia, put her initial into the belt and
+made herself on the way.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;This however showed weasel&lt;/li&gt;
+&lt;li&gt;Well uncritical so misled
+&lt;ul&gt;
+&lt;li&gt;this is very interesting&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;Goodness much until that fluid owl&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;When she reached the first hills of the &lt;strong&gt;Italic Mountains&lt;/strong&gt;, she had a last
+view back on the skyline of her hometown &lt;em&gt;Bookmarksgrove&lt;/em&gt;, the headline of
+&lt;a href=&quot;http://google.com&quot;&gt;Alphabet Village&lt;/a&gt; and the subline of her own road, the Line
+Lane. Pityful a rhetoric question ran over her cheek, then she continued her
+way. On her way she met a copy.&lt;/p&gt;
+&lt;h3&gt;Overlaid the jeepers uselessly much excluding&lt;/h3&gt;
+&lt;p&gt;But nothing the copy said could convince her and so it didn’t take long until a
+few insidious Copy Writers ambushed her, made her drunk with
+&lt;a href=&quot;http://google.com&quot;&gt;Longe and Parole&lt;/a&gt; and dragged her into their agency, where
+they abused her for their projects again and again. And if she hasn’t been
+rewritten, then they are still using her.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Far far away, behind the word mountains, far from the countries Vokalia and
+Consonantia, there live the blind texts. Separated they live in Bookmarksgrove
+right at the coast of the Semantics, a large language ocean.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;It is a paradisematic country, in which roasted parts of sentences fly into your
+mouth. Even the all-powerful Pointing has no control about the blind texts it is
+an almost unorthographic life One day however a small line of blind text by the
+name of Lorem Ipsum decided to leave for the far World of Grammar.&lt;/p&gt;
+&lt;h3&gt;According a funnily until pre-set or arrogant well cheerful&lt;/h3&gt;
+&lt;p&gt;The Big Oxmox advised her not to do so, because there were thousands of bad
+Commas, wild Question Marks and devious Semikoli, but the Little Blind Text
+didn’t listen. She packed her seven versalia, put her initial into the belt and
+made herself on the way.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;So baboon this&lt;/li&gt;
+&lt;li&gt;Mounted militant weasel gregariously admonishingly straightly hey&lt;/li&gt;
+&lt;li&gt;Dear foresaw hungry and much some overhung&lt;/li&gt;
+&lt;li&gt;Rash opossum less because less some amid besides yikes jeepers frenetic
+impassive fruitlessly shut&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;When she reached the first hills of the Italic Mountains, she had a last view
+back on the skyline of her hometown Bookmarksgrove, the headline of Alphabet
+Village and the subline of her own road, the Line Lane. Pityful a rhetoric
+question ran over her cheek, then she continued her way. On her way she met a
+copy.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The copy warned the Little Blind Text, that where it came from it would have
+been rewritten a thousand times and everything that was left from its origin
+would be the word &quot;and&quot; and the Little Blind Text should turn around and
+return to its own, safe country.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;But nothing the copy said could convince her and so it didn’t take long until a
+few insidious Copy Writers ambushed her, made her drunk with Longe and Parole
+and dragged her into their agency, where they abused her for their projects
+again and again. And if she hasn’t been rewritten, then they are still using
+her. Far far away, behind the word mountains, far from the countries Vokalia and
+Consonantia, there live the blind texts.&lt;/p&gt;
+&lt;h4&gt;Silent delightfully including because before one up barring chameleon&lt;/h4&gt;
+&lt;p&gt;Separated they live in Bookmarksgrove right at the coast of the Semantics, a
+large language ocean. A small river named Duden flows by their place and
+supplies it with the necessary regelialia. It is a paradisematic country, in
+which roasted parts of sentences fly into your mouth.&lt;/p&gt;
+&lt;p&gt;Even the all-powerful Pointing has no control about the blind texts it is an
+almost unorthographic life One day however a small line of blind text by the
+name of Lorem Ipsum decided to leave for the far World of Grammar. The Big Oxmox
+advised her not to do so, because there were thousands of bad Commas, wild
+Question Marks and devious Semikoli, but the Little Blind Text didn’t listen.&lt;/p&gt;
+&lt;h5&gt;Wherever far wow thus a squirrel raccoon jeez jaguar this from along&lt;/h5&gt;
+&lt;p&gt;She packed her seven versalia, put her initial into the belt and made herself on
+the way. When she reached the first hills of the Italic Mountains, she had a
+last view back on the skyline of her hometown Bookmarksgrove, the headline of
+Alphabet Village and the subline of her own road, the Line Lane. Pityful a
+rhetoric question ran over her cheek, then she continued her way. On her way she
+met a copy.&lt;/p&gt;
+&lt;h6&gt;Slapped cozy a that lightheartedly and far&lt;/h6&gt;
+&lt;p&gt;The copy warned the Little Blind Text, that where it came from it would have
+been rewritten a thousand times and everything that was left from its origin
+would be the word &quot;and&quot; and the Little Blind Text should turn around and return
+to its own, safe country. But nothing the copy said could convince her and so it
+didn’t take long until a few insidious Copy Writers ambushed her, made her drunk
+with Longe and Parole and dragged her into their agency, where they abused her
+for their projects again and again.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[My Second Post!]]></title><description><![CDATA[Wow! I love blogging so much already. Did you know that "despite its name, salted duck eggs can also be made from
+chicken eggs, though the…]]></description><link>https://labnan-blog.netlifycms.app/my-second-post/</link><guid isPermaLink="false">https://labnan-blog.netlifycms.app/my-second-post/</guid><pubDate>Wed, 06 May 2015 23:46:37 GMT</pubDate><content:encoded>&lt;p&gt;Wow! I love blogging so much already.&lt;/p&gt;
+&lt;p&gt;Did you know that &quot;despite its name, salted duck eggs can also be made from
+chicken eggs, though the taste and texture will be somewhat different, and the
+egg yolk will be less rich.&quot;?
+(&lt;a href=&quot;https://en.wikipedia.org/wiki/Salted_duck_egg&quot;&gt;Wikipedia Link&lt;/a&gt;)&lt;/p&gt;
+&lt;p&gt;Yeah, I didn&apos;t either.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Hello World]]></title><description><![CDATA[This is my first post on my new fake blog! How exciting! I'm sure I'll write a lot more interesting things in the future. Oh, and here's a…]]></description><link>https://labnan-blog.netlifycms.app/hello-world/</link><guid isPermaLink="false">https://labnan-blog.netlifycms.app/hello-world/</guid><pubDate>Fri, 01 May 2015 22:12:03 GMT</pubDate><content:encoded>&lt;p&gt;This is my first post on my new fake blog! How exciting!&lt;/p&gt;
+&lt;p&gt;I&apos;m sure I&apos;ll write a lot more interesting things in the future.&lt;/p&gt;
+&lt;p&gt;Oh, and here&apos;s a great quote from this Wikipedia on
+&lt;a href=&quot;https://en.wikipedia.org/wiki/Salted_duck_egg&quot;&gt;salted duck eggs&lt;/a&gt;.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;A salted duck egg is a Chinese preserved food product made by soaking duck
+eggs in brine, or packing each egg in damp, salted charcoal. In Asian
+supermarkets, these eggs are sometimes sold covered in a thick layer of salted
+charcoal paste. The eggs may also be sold with the salted paste removed,
+wrapped in plastic, and vacuum packed. From the salt curing process, the
+salted duck eggs have a briny aroma, a gelatin-like egg white and a
+firm-textured, round yolk that is bright orange-red in color.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 630px; &quot;
+    &gt;
+      &lt;a
+    class=&quot;gatsby-resp-image-link&quot;
+    href=&quot;/blogs/static/8058f3f26913fea3b6a89a73344fe94a/e1596/salty_egg.jpg&quot;
+    style=&quot;display: block&quot;
+    target=&quot;_blank&quot;
+    rel=&quot;noopener&quot;
+  &gt;
+    &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 75.31645569620254%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/jpeg;base64,/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wgARCAAPABQDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAAAAMB/8QAFwEAAwEAAAAAAAAAAAAAAAAAAAEEBf/aAAwDAQACEAMQAAABgik0dXC//8QAGRABAAMBAQAAAAAAAAAAAAAAAQACERIy/9oACAEBAAEFAkqW7B5Zox9t8n//xAAXEQEAAwAAAAAAAAAAAAAAAAAAERJB/9oACAEDAQE/AdVl/8QAFhEBAQEAAAAAAAAAAAAAAAAAABEC/9oACAECAQE/AYun/8QAGxAAAQQDAAAAAAAAAAAAAAAAAAECESEiMTL/2gAIAQEABj8CvRjaHMkvIQo//8QAGxAAAwEBAAMAAAAAAAAAAAAAAREhAEGBobH/2gAIAQEAAT8hsTTH203YINmYDPHckkPzQiAnv//aAAwDAQACAAMAAAAQyC//xAAXEQEBAQEAAAAAAAAAAAAAAAABABEh/9oACAEDAQE/EBHDK6y//8QAGBEAAgMAAAAAAAAAAAAAAAAAAAERIVH/2gAIAQIBAT8QWiS0j//EABwQAQEAAgMBAQAAAAAAAAAAAAERADEhYYFB4f/aAAgBAQABPxBOzi0NHmChLtHkL9EcWZeCVJ1kcRoVp3lEYcnjEk0ES7/Jn//Z&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Chinese Salty Egg&quot;
+        title=&quot;&quot;
+        src=&quot;/blogs/static/8058f3f26913fea3b6a89a73344fe94a/828fb/salty_egg.jpg&quot;
+        srcset=&quot;/blogs/static/8058f3f26913fea3b6a89a73344fe94a/ff44c/salty_egg.jpg 158w,
+/blogs/static/8058f3f26913fea3b6a89a73344fe94a/a6688/salty_egg.jpg 315w,
+/blogs/static/8058f3f26913fea3b6a89a73344fe94a/828fb/salty_egg.jpg 630w,
+/blogs/static/8058f3f26913fea3b6a89a73344fe94a/0ede0/salty_egg.jpg 945w,
+/blogs/static/8058f3f26913fea3b6a89a73344fe94a/3ac88/salty_egg.jpg 1260w,
+/blogs/static/8058f3f26913fea3b6a89a73344fe94a/e1596/salty_egg.jpg 2048w&quot;
+        sizes=&quot;(max-width: 630px) 100vw, 630px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+        decoding=&quot;async&quot;
+      /&gt;
+  &lt;/a&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;You can also write code blocks here!&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;js&quot;&gt;&lt;pre class=&quot;language-js&quot;&gt;&lt;code class=&quot;language-js&quot;&gt;&lt;span class=&quot;token keyword&quot;&gt;const&lt;/span&gt; saltyDuckEgg &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token string&quot;&gt;&quot;chinese preserved food product&quot;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th align=&quot;left&quot;&gt;Number&lt;/th&gt;
+&lt;th align=&quot;left&quot;&gt;Title&lt;/th&gt;
+&lt;th align=&quot;right&quot;&gt;Year&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td align=&quot;left&quot;&gt;1&lt;/td&gt;
+&lt;td align=&quot;left&quot;&gt;Harry Potter and the Philosopher’s Stone&lt;/td&gt;
+&lt;td align=&quot;right&quot;&gt;2001&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td align=&quot;left&quot;&gt;2&lt;/td&gt;
+&lt;td align=&quot;left&quot;&gt;Harry Potter and the Chamber of Secrets&lt;/td&gt;
+&lt;td align=&quot;right&quot;&gt;2002&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td align=&quot;left&quot;&gt;3&lt;/td&gt;
+&lt;td align=&quot;left&quot;&gt;Harry Potter and the Prisoner of Azkaban&lt;/td&gt;
+&lt;td align=&quot;right&quot;&gt;2004&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;a href=&quot;https://raw.github.com/adamschwartz/github-markdown-kitchen-sink/master/README.md&quot;&gt;View raw (TEST.md)&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;This is a paragraph.&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;This is a paragraph.&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h1&gt;Header 1&lt;/h1&gt;
+&lt;h2&gt;Header 2&lt;/h2&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;Header 1
+========
+
+Header 2
+--------&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h1&gt;Header 1&lt;/h1&gt;
+&lt;h2&gt;Header 2&lt;/h2&gt;
+&lt;h3&gt;Header 3&lt;/h3&gt;
+&lt;h4&gt;Header 4&lt;/h4&gt;
+&lt;h5&gt;Header 5&lt;/h5&gt;
+&lt;h6&gt;Header 6&lt;/h6&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;# Header 1
+## Header 2
+### Header 3
+#### Header 4
+##### Header 5
+###### Header 6&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h1&gt;Header 1&lt;/h1&gt;
+&lt;h2&gt;Header 2&lt;/h2&gt;
+&lt;h3&gt;Header 3&lt;/h3&gt;
+&lt;h4&gt;Header 4&lt;/h4&gt;
+&lt;h5&gt;Header 5&lt;/h5&gt;
+&lt;h6&gt;Header 6&lt;/h6&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;# Header 1 #
+## Header 2 ##
+### Header 3 ###
+#### Header 4 ####
+##### Header 5 #####
+###### Header 6 ######&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aliquam hendrerit mi posuere lectus. Vestibulum enim wisi, viverra nec, fringilla in, laoreet vitae, risus.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;&gt; Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aliquam hendrerit mi posuere lectus. Vestibulum enim wisi, viverra nec, fringilla in, laoreet vitae, risus.&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;blockquote&gt;
+&lt;h2&gt;This is a header.&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;This is the first list item.&lt;/li&gt;
+&lt;li&gt;This is the second list item.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Here&apos;s some example code:&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;Markdown.generate();&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;/blockquote&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;&gt; ## This is a header.
+&gt; 1. This is the first list item.
+&gt; 2. This is the second list item.
+&gt;
+&gt; Here&apos;s some example code:
+&gt;
+&gt;     Markdown.generate();&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;ul&gt;
+&lt;li&gt;Red&lt;/li&gt;
+&lt;li&gt;Green&lt;/li&gt;
+&lt;li&gt;Blue&lt;/li&gt;
+&lt;/ul&gt;
+&lt;ul&gt;
+&lt;li&gt;Red&lt;/li&gt;
+&lt;li&gt;Green&lt;/li&gt;
+&lt;li&gt;Blue&lt;/li&gt;
+&lt;/ul&gt;
+&lt;ul&gt;
+&lt;li&gt;Red&lt;/li&gt;
+&lt;li&gt;Green&lt;/li&gt;
+&lt;li&gt;Blue&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;markdown&quot;&gt;&lt;pre class=&quot;language-markdown&quot;&gt;&lt;code class=&quot;language-markdown&quot;&gt;&lt;span class=&quot;token list punctuation&quot;&gt;-&lt;/span&gt; Red
+&lt;span class=&quot;token list punctuation&quot;&gt;-&lt;/span&gt; Green
+&lt;span class=&quot;token list punctuation&quot;&gt;-&lt;/span&gt; Blue
+
+&lt;span class=&quot;token list punctuation&quot;&gt;*&lt;/span&gt; Red
+&lt;span class=&quot;token list punctuation&quot;&gt;*&lt;/span&gt; Green
+&lt;span class=&quot;token list punctuation&quot;&gt;*&lt;/span&gt; Blue
+
+&lt;span class=&quot;token list punctuation&quot;&gt;-&lt;/span&gt; Red
+&lt;span class=&quot;token list punctuation&quot;&gt;-&lt;/span&gt; Green
+&lt;span class=&quot;token list punctuation&quot;&gt;-&lt;/span&gt; Blue&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;code goes&lt;/code&gt; here in this line&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;bold&lt;/strong&gt; goes here&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;markdown&quot;&gt;&lt;pre class=&quot;language-markdown&quot;&gt;&lt;code class=&quot;language-markdown&quot;&gt;&lt;span class=&quot;token list punctuation&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;token code-snippet code keyword&quot;&gt;`code goes`&lt;/span&gt; here in this line
+&lt;span class=&quot;token list punctuation&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;token bold&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;**&lt;/span&gt;&lt;span class=&quot;token content&quot;&gt;bold&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;**&lt;/span&gt;&lt;/span&gt; goes here&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;ol&gt;
+&lt;li&gt;Buy flour and salt&lt;/li&gt;
+&lt;li&gt;Mix together with water&lt;/li&gt;
+&lt;li&gt;Bake&lt;/li&gt;
+&lt;/ol&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;markdown&quot;&gt;&lt;pre class=&quot;language-markdown&quot;&gt;&lt;code class=&quot;language-markdown&quot;&gt;&lt;span class=&quot;token list punctuation&quot;&gt;1.&lt;/span&gt; Buy flour and salt
+&lt;span class=&quot;token list punctuation&quot;&gt;1.&lt;/span&gt; Mix together with water
+&lt;span class=&quot;token list punctuation&quot;&gt;1.&lt;/span&gt; Bake&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;code goes&lt;/code&gt; here in this line&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;bold&lt;/strong&gt; goes here&lt;/li&gt;
+&lt;/ol&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;markdown&quot;&gt;&lt;pre class=&quot;language-markdown&quot;&gt;&lt;code class=&quot;language-markdown&quot;&gt;&lt;span class=&quot;token list punctuation&quot;&gt;1.&lt;/span&gt; &lt;span class=&quot;token code-snippet code keyword&quot;&gt;`code goes`&lt;/span&gt; here in this line
+&lt;span class=&quot;token list punctuation&quot;&gt;1.&lt;/span&gt; &lt;span class=&quot;token bold&quot;&gt;&lt;span class=&quot;token punctuation&quot;&gt;**&lt;/span&gt;&lt;span class=&quot;token content&quot;&gt;bold&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;**&lt;/span&gt;&lt;/span&gt; goes here&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Paragraph:&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;Code&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;!-- --&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;Paragraph:
+
+    Code&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;hr&gt;
+&lt;hr&gt;
+&lt;hr&gt;
+&lt;hr&gt;
+&lt;hr&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;* * *
+
+***
+
+*****
+
+- - -
+
+---------------------------------------&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This is &lt;a href=&quot;http://example.com&quot; title=&quot;Example&quot;&gt;an example&lt;/a&gt; link.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;http://example.com&quot;&gt;This link&lt;/a&gt; has no title attr.&lt;/p&gt;
+&lt;p&gt;This is &lt;a href=&quot;http://example.com&quot; title=&quot;Optional Title&quot;&gt;an example&lt;/a&gt; reference-style link.&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;This is [an example](http://example.com &quot;Example&quot;) link.
+
+[This link](http://example.com) has no title attr.
+
+This is [an example] [id] reference-style link.
+
+[id]: http://example.com &quot;Optional Title&quot;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;em&gt;single asterisks&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;single underscores&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;double asterisks&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;double underscores&lt;/strong&gt;&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;*single asterisks*
+
+_single underscores_
+
+**double asterisks**
+
+__double underscores__&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This paragraph has some &lt;code class=&quot;language-text&quot;&gt;code&lt;/code&gt; in it.&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;This paragraph has some `code` in it.&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;https://via.placeholder.com/200x50&quot; alt=&quot;Alt Text&quot; title=&quot;Image Title&quot;&gt;&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;![Alt Text](https://via.placeholder.com/200x50 &quot;Image Title&quot;)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</content:encoded></item></channel></rss>
