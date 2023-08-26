@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Gatsby Starter Blog RSS Feed]]></title><description><![CDATA[Just a place to store my blogs, for now]]></description><link>http://github.com/dylang/node-rss</link><generator>GatsbyJS</generator><lastBuildDate>Sat, 26 Aug 2023 20:53:56 GMT</lastBuildDate><item><title><![CDATA[Google Summer of Code - My work At VideoLAN]]></title><description><![CDATA[My work at Google Summer of Code, to simply explain is: enabling dynamic
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Gatsby Starter Blog RSS Feed]]></title><description><![CDATA[Just a place to store my blogs, for now]]></description><link>http://github.com/dylang/node-rss</link><generator>GatsbyJS</generator><lastBuildDate>Sat, 26 Aug 2023 21:00:49 GMT</lastBuildDate><item><title><![CDATA[Google Summer of Code - My work At VideoLAN]]></title><description><![CDATA[My work at Google Summer of Code, to simply explain is: enabling dynamic
 loading for wasm32-unknown-emscripten. To understand it, we need to…]]></description><link>null/gsoc/my-work-in-gsoc-at-videolan/</link><guid isPermaLink="false">null/gsoc/my-work-in-gsoc-at-videolan/</guid><pubDate>Sat, 26 Aug 2023 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;My work at Google Summer of Code, to simply explain is: enabling dynamic
 loading for wasm32-unknown-emscripten. To understand it, we need to delve
 into how VLC&apos;s plugins are loaded.&lt;/p&gt;
@@ -61,7 +61,7 @@ actual directory search is not conducted by opendir.&lt;/p&gt;
 &lt;p&gt;To mitigate this, I added a JavaScript method that mounts the plugin
 directory to WasmFS. After that libvlc_new is initiated and module loading
 begins.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Google Summer of Code Journey:  Hacking Libtool: Part 1]]></title><description><![CDATA[While working in VLC.js for VideoLAN in Google Summer of Code 2023, I came
-accross an interesting problem. You see VLC uses GNU Autotools to…]]></description><link>null/blog/gsoc-libtool-part1/</link><guid isPermaLink="false">null/blog/gsoc-libtool-part1/</guid><pubDate>Tue, 15 Aug 2023 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;While working in VLC.js for VideoLAN in Google Summer of Code 2023, I came
+accross an interesting problem. You see VLC uses GNU Autotools to…]]></description><link>null/libtool/gsoc-libtool-part1/</link><guid isPermaLink="false">null/libtool/gsoc-libtool-part1/</guid><pubDate>Tue, 15 Aug 2023 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;While working in VLC.js for VideoLAN in Google Summer of Code 2023, I came
 accross an interesting problem. You see VLC uses GNU Autotools to
 create their compilation script, like most other C/C++ projects. The
 compilation process is simple, if all dependencies are installed.&lt;/p&gt;
@@ -146,7 +146,7 @@ mechanisms.&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;Stay tuned for the part two! And stay safe.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Linux Kernel Bug Fixing - My Experience]]></title><description><![CDATA[For the past one year, I knew about Linux Kernel Mentorship Program
 which I had been wishing to join. And this summer as my university
-asks…]]></description><link>null/blog/my-experience2/</link><guid isPermaLink="false">null/blog/my-experience2/</guid><pubDate>Sat, 27 Aug 2022 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;For the past one year, I knew about Linux Kernel Mentorship Program
+asks…]]></description><link>null/lkmp-experience/my-experience2/</link><guid isPermaLink="false">null/lkmp-experience/my-experience2/</guid><pubDate>Sat, 27 Aug 2022 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;For the past one year, I knew about Linux Kernel Mentorship Program
 which I had been wishing to join. And this summer as my university
 asks me for gaining industry level knowledge, I decided why not now?&lt;/p&gt;
 &lt;p&gt;On 8th May, I applied for the Mentorship program. &quot;Will they take
@@ -267,7 +267,7 @@ wonderful project. So, this is not the ending, rather the beginning.&lt;/p&gt;
 &lt;p&gt;By now I have three patches accepted in Linux and few rejected as well.
 With all of them being very informative. And the big news is Linux 6.0
 is going to be released soon, with my code running in it too.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Linux Kernel Mentorship Program: How They Prepared Me For Kernel Development Before I Even Got Accepted]]></title><description><![CDATA[There is a general belief, that in an internship, unless it is long
-you will spend your time learning, and will probably never get to work…]]></description><link>null/blog/how-lkmp-prepares-candidates/</link><guid isPermaLink="false">null/blog/how-lkmp-prepares-candidates/</guid><pubDate>Thu, 25 Aug 2022 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;There is a general belief, that in an internship, unless it is long
+you will spend your time learning, and will probably never get to work…]]></description><link>null/lkmp/how-lkmp-prepares-candidates/</link><guid isPermaLink="false">null/lkmp/how-lkmp-prepares-candidates/</guid><pubDate>Thu, 25 Aug 2022 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;There is a general belief, that in an internship, unless it is long
 you will spend your time learning, and will probably never get to work
 in any important ongoing project. Because getting acquainted with a
 new project is tough as they are pretty large and combine years of
