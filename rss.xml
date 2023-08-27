@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Gatsby Starter Blog RSS Feed]]></title><description><![CDATA[Just a place to store my blogs, for now]]></description><link>http://github.com/dylang/node-rss</link><generator>GatsbyJS</generator><lastBuildDate>Sat, 26 Aug 2023 21:00:49 GMT</lastBuildDate><item><title><![CDATA[Google Summer of Code - My work At VideoLAN]]></title><description><![CDATA[My work at Google Summer of Code, to simply explain is: enabling dynamic
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Gatsby Starter Blog RSS Feed]]></title><description><![CDATA[Just a place to store my blogs, for now]]></description><link>http://github.com/dylang/node-rss</link><generator>GatsbyJS</generator><lastBuildDate>Sun, 27 Aug 2023 18:55:18 GMT</lastBuildDate><item><title><![CDATA[Google Summer of Code - My work At VideoLAN]]></title><description><![CDATA[My work at Google Summer of Code, to simply explain is: enabling dynamic
 loading for wasm32-unknown-emscripten. To understand it, we need to…]]></description><link>null/gsoc/my-work-in-gsoc-at-videolan/</link><guid isPermaLink="false">null/gsoc/my-work-in-gsoc-at-videolan/</guid><pubDate>Sat, 26 Aug 2023 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;My work at Google Summer of Code, to simply explain is: enabling dynamic
 loading for wasm32-unknown-emscripten. To understand it, we need to delve
 into how VLC&apos;s plugins are loaded.&lt;/p&gt;
@@ -49,6 +49,206 @@ given path passed via environment variables or other methods from the
 front end.&lt;/p&gt;
 &lt;p&gt;Now to enable this I had to make changes into libtool to allow
 it inform it about how to &quot;compile&quot; shared modules.&lt;/p&gt;
+&lt;p&gt;While working on this, I came accross an interesting problem. You see
+VLC uses GNU Autotools to create their compilation script, like most
+other C/C++ projects. The compilation process is simple, if all
+dependencies are installed.&lt;/p&gt;
+&lt;p&gt;First you bootstrap with ./bootstrap
+Then you configure, with ./configure [--enable-params] [--disable-params]
+[other params]
+And finally you compile, using GNU/Make, with the command &apos;make&apos;.&lt;/p&gt;
+&lt;p&gt;In the configure step, among various enable/disable parameters, there
+is one parameter called &quot;shared&quot;. This allows the modules to be compiled
+as dynamic libraries, making them dynamic linkable.&lt;/p&gt;
+&lt;p&gt;So, to enable dynamic linking for wasm32-unknown-emscripten I had to just
+do this one thing: add --enable-shared to the configure parameters,
+right?&lt;/p&gt;
+&lt;p&gt;Wrong! Turns out even if we use --enable-shared in case of wasm32-unknown-emscripten
+it does static compilation! I first realized this when I tried
+--enable-vlc with --enable-shared just to see how it turns out. And
+the configuration fails with the error:
+&quot;VLC is based on plugins. Shared libraries cannot be disabled.&quot;&lt;/p&gt;
+&lt;p&gt;Something is wrong! This is not supposed to happen, I have tried with
+x86_64-linux host, and it works perfectly, then why not in case of
+emscripten? For some reason, shared libraries can not be enabled!
+Time for some investigation.&lt;/p&gt;
+&lt;p&gt;So what is wasm32-unknown-emscripten?
+For that, you have to know what cross compilation triplet is. Briefly saying,
+it is &lt;Architecture&gt;-&lt;Vendor&gt;-&lt;Operating System&gt;, so here wasm32 is the
+architecture here, emscripten is the Operating System taken to be running
+on the browser. VLC.js is basically vlc media player ported to web assembly,
+running with Emscripten in browser, hence we use this.&lt;/p&gt;
+&lt;p&gt;So, the first thing I did was enable building of vlc binaries,  with
+--enable-vlc, as vlc binaries can not be built without dynamic loading
+enabled. There has to be a check there, that makes sure that shared
+modules are enabled.  Opening the configure script and searching for
+&quot;VLC is based on plugins&quot;, we indeed find the condition there:&lt;/p&gt;
+&lt;p&gt;if test &quot;${enable_shared}&quot; = &quot;no&quot; -a &quot;${enable_vlc}&quot; != &quot;no&quot;&lt;/p&gt;
+&lt;p&gt;So, something must have caused enable_shared to be no, But what is it?&lt;/p&gt;
+&lt;p&gt;Something must have assigned enable_shared to be no, so let&apos;s search
+for &quot;enable_shared=no&quot;, and just few lines before the above line, we
+find that:&lt;/p&gt;
+&lt;p&gt;test no = &quot;$can_build_shared&quot; &amp;#x26;&amp;#x26; enable_shared=no&lt;/p&gt;
+&lt;p&gt;So, the value of enable_shared came from can_build_shared, so now we
+search for &quot;can_build_shared=no&quot; to find out that its value came from
+the variable dynamic_linker. And it turns out the value of dynamic_linker
+is pre-assigned based on host_os. For example, if host_os is android,
+dynamic linker is &quot;Android linker&quot; and so on. There seemed to be only
+one purpose of this variable, that is to indicate whether a dynamic linker
+exists for that particular host_os. Which does not exist for the host_os
+I am targetting, &quot;emscripten&quot;.&lt;/p&gt;
+&lt;p&gt;But the name, &quot;Android linker&quot; for android has to come from somewhere.
+The configure script itself is generated from various configure.am files
+when running the bootstrap script as mentioned earlier. So, I make a quick search:&lt;/p&gt;
+&lt;p&gt;git grep -r &quot;Android linker&quot;&lt;/p&gt;
+&lt;p&gt;Only to find nothing. So this value does not exist in the repository as
+a configuration file or anything, rather the value came from outside the
+repository. My mentor Alexandre Janniaux was very helpful to point out
+that the value comes from libtool, and what we can do at this point is to
+hack libtool and add dynamic_linker for emscripten at libtool/m4/libtool.m4
+and use that custom libtool.&lt;/p&gt;
+&lt;p&gt;And in libtool.m4 there it was, the &quot;Android linker&quot; for the host
+linux*android. Taking inspiration from how android section was implemented,
+we added a new host_os named emscripten, with dynamic_linker to be
+&quot;Emscripten linker&quot;, and bingo! After rebootstrapping with the new libtool
+the configuration script ran successfully without switching to static mode
+silently.&lt;/p&gt;
+&lt;p&gt;So, what is libttool?
+Libtool is a generic library support script that hides the complexity of
+using shared libraries behind a consistent, portable interface. Different
+compilers take different flags, commands or approaches to compile shared
+libraries. Therefore compiler front end becomes inconsistent. Which in terms,
+forces us to use too many unnecessary conditionals in Makefiles. To fix
+this issue, Libtool was developed, it handles the differences internally
+while giving a consistent front end that we can use for the Makefiles,
+enabling us to compile for any other targets whenever needed.&lt;/p&gt;
+&lt;p&gt;Later, we configured emscripten host in libtool to make compilation
+compatible with various features in Emscripten compiler that is different
+from Clang or GCC.&lt;/p&gt;
+&lt;p&gt;By now we already know where to change for emscripten host. So later is
+pretty straightforward. That is to understand what is needed for successful
+compilation and configure libtool&apos;s source accordingly.
+Look around the source! There are examples everywhere.
+Still we need to make sure what we need and carefully enable the required
+features corrosponding to the compiler.&lt;/p&gt;
+&lt;p&gt;Well, since my shared compilation is not being forcefully disabled,
+now, I can try to figure out from the error and warning messages which
+compiler options should be removed and which are to be added.&lt;/p&gt;
+&lt;p&gt;For example, at this stage, configuring with --enable-shared and
+compiling it gives the warning:&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;emcc: warning: linking a library with `-shared` will emit a static 
+object file. This is a form of emulation to support existing build 
+systems.  If you want to build a runtime shared library use the 
+SIDE_MODULE setting. [-Wemcc]&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Now from the documentation of emscripten we do find out that SIDE_MODULE
+is emscripten&apos;s way of compiling a code as shared module, as opposed
+to -shared. So, we have to use that instead. But how do we add this
+to libtool?&lt;/p&gt;
+&lt;p&gt;For this we use the LT_TAGVAR method to modify archive_cmds. This simply
+edits the part of libtool that creates dynamic library archives to answer:
+&quot;Which parameters will I run to create the archive?&quot;&lt;/p&gt;
+&lt;p&gt;.. m4 ::
+_LT_TAGVAR(archive_cmds, $1)=&apos;-s SIDE_MODULE=1&apos;&lt;/p&gt;
+&lt;p&gt;Libtool has default way of naming each library archives and shared
+objects, which include, name, relese and extension. If we want we
+can change this default behavior by changing library_name_spec and
+soname_spec.&lt;/p&gt;
+&lt;p&gt;.. m4 ::
+library_names_spec=&apos;$libname$release$shared_ext&apos;
+soname_spec=&apos;$libname$release$shared_ext&apos;&lt;/p&gt;
+&lt;p&gt;We can also tell libtool which command parameter is
+necessary for position independent code setting &lt;code class=&quot;language-text&quot;&gt;_LT_COMPILER_PIC&lt;/code&gt;. For
+our purpose, we  needed &lt;code class=&quot;language-text&quot;&gt;-fPIC&lt;/code&gt;. However, now, you can try inspecting
+this variable for Windows section! As we know Windows does not use
+position independent code, but uses a very different method to achieve
+shared loading. That&apos;s the beauty of libtool! With all these
+complexities taken care of here, we do not need to worry about  it in
+compile time. With this we can easily configure cross compilation for
+all platforms with a single build script!&lt;/p&gt;
+&lt;p&gt;Finally, at your build path (The path from where you run your configure
+script) there is an interesting file named &lt;code class=&quot;language-text&quot;&gt;config.status&lt;/code&gt;.
+This file is created when you run the configure script. Observing this
+file, you can find some interesting keys. Keys like: soname_spec,
+archive_cmds, lt_prog_compiler_pic. Sounds familiar right? We just
+worked with these keys above, in libtool.m4!&lt;/p&gt;
+&lt;p&gt;This file helped me a lot while debugging libtool.m4, hope it helps
+you as well ;).&lt;/p&gt;
+&lt;p&gt;With the libtool.m4 ready for emscripten compilation, we can now finally
+initiate compilation. Libtool will configure itself and put necessary
+flags for us. At this point everything compiled successfully, till the
+compilation of binaries. Then this error shows up:&lt;/p&gt;
+&lt;p&gt;.. log ::
+error: undefined symbol: libvlc_new (referenced by
+top-level compiled C/C++ code)
+warning: _libvlc_new may need to be added to
+EXPORTED_FUNCTIONS if it arrives from a system library&lt;br&gt;
+Here I just showed the error for libvlc_new function only. But this error
+occurs in case of all the functions that are exposed to the front end.&lt;/p&gt;
+&lt;p&gt;But why does it occur? Well during compilation of shared modules, some
+compilers demand another flag that tells which functions to be exported
+i.e. can be seen by the user. Different compiler implements it differently,
+emscripten has its own way of doing this as well.&lt;/p&gt;
+&lt;p&gt;In case of  We can use -s EXPORTED_FUNCTIONS to provide the function
+names. Like this:
+&lt;code class=&quot;language-text&quot;&gt;emcc code.c -s EXPORTED_FUNCTIONS=_function1,_function2,_function3&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;We can provide them through  a file as well:
+&lt;code class=&quot;language-text&quot;&gt;-s EXPORTED_FUNCTIONS=@path/to/file.sym&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;The file has to be a text file. Within this: functions are provided
+like this:&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;_function1
+_function2
+_function3&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Doing so will expose function1, function2, function3 from code.c.&lt;/p&gt;
+&lt;p&gt;Notice that, the actual function name is function1, but while when exporting,
+we use the name _function1.&lt;/p&gt;
+&lt;p&gt;Likewise, different compiler was implemented with different standards.
+Some compilers do not even take file name, some compilers do not add _
+before their function names. Some compilers do not even need to export
+functions.&lt;/p&gt;
+&lt;p&gt;Now libtool handles this very interestingly. It takes the symbol file
+path as input with --export-symbols option. In the backend in libtool.m4
+we can catch this file path in the export_symbol variable.
+Then the commands saved at archive_expsym_cmds is used to compile the file.&lt;/p&gt;
+&lt;p&gt;Conventionally, this file contains function list like this:&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;function1
+function2
+function3&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;That looks great! But there is a big problem. Emscripten takes shared
+function input prefixing with _. But conventionally we do not have that!&lt;/p&gt;
+&lt;p&gt;To solve this I took the following steps:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Take the input file.&lt;/li&gt;
+&lt;li&gt;Add _ before each line.&lt;/li&gt;
+&lt;li&gt;Save it to another file.&lt;/li&gt;
+&lt;li&gt;Use that file.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;But how to do all these while assigning it to
+&lt;code class=&quot;language-text&quot;&gt;_LT_TAGVAR(archive_expsym_cmds, $1)&lt;/code&gt;?&lt;/p&gt;
+&lt;p&gt;Turns out _LT_TAGVAR has a cool way to instruct it to run a command
+while assigning a string. You can use it like this:&lt;/p&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;&quot;Your Command Here ~ Normal string here that you Intended to Keep&quot;&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;For this purpose, libtool also has its own wrapper on &lt;code class=&quot;language-text&quot;&gt;sed&lt;/code&gt; named
+&lt;code class=&quot;language-text&quot;&gt;$SED&lt;/code&gt; that can be used in the strings. During build this will be converted
+into a runnable &lt;code class=&quot;language-text&quot;&gt;sed&lt;/code&gt; command. &lt;code class=&quot;language-text&quot;&gt;$SED&lt;/code&gt; is same as &lt;code class=&quot;language-text&quot;&gt;sed&lt;/code&gt;, except it uses &lt;code class=&quot;language-text&quot;&gt;|&lt;/code&gt; in place of &lt;code class=&quot;language-text&quot;&gt;/&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;So the final implementation becomes something like this:&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;_LT_TAGVAR(archive_expsym_cmds, $1)=&apos;$SED &quot;s|^|_|&quot; $export_symbols &gt;$output_objdir/$soname.expsym~$CC -sSIDE_MODULE=2 -shared $libobjs $deplibs $compiler_flags -o $lib -s EXPORTED_FUNCTIONS=@$output_objdir/$soname.expsy&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;To break down:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;We take the input file with &lt;code class=&quot;language-text&quot;&gt;$export_symbols&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;We use sed to add _ before every function name:
+&lt;code class=&quot;language-text&quot;&gt;$SED &quot;s|^|_|&quot; $export_symbols&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;We save it to &lt;code class=&quot;language-text&quot;&gt;$output_objdir/$soname.expsym&quot;&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;We preceed it with the ~ to indicate that command part has ended, its time to take the actual string.&lt;/li&gt;
+&lt;li&gt;In the string, we can use &lt;code class=&quot;language-text&quot;&gt;$output_objdir/$soname.expsym&lt;/code&gt; instead of&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;$export_symbols&lt;/code&gt;!&lt;/p&gt;
+&lt;p&gt;You may ask here, we have already handled -shared in archive_cmds. So why
+handle it here again? The answer is: If a file has functions to export,
+Libtool will use archive_expsym_cmds, otherwise, Libtool will use
+archive_cmds.&lt;/p&gt;
+&lt;p&gt;And with this, our libtool is ready for emscripten. We just create a
+patch out of it, and instruct our emscripten  build script to always
+apply our patch and compile libtool in case of shared compilation.&lt;/p&gt;
 &lt;p&gt;Also it turns out that several features of emscripten are not quite
 ready yet for this purpose. For example, EM_JS is not supported
 in emscripten shared modules. EM_JS is a macro that allows one to
@@ -59,8 +259,8 @@ with WasmFS. WasmFS is a virtual filesystem for file operations
 provided by emscripten. WasmFS is not linked with the server, so
 actual directory search is not conducted by opendir.&lt;/p&gt;
 &lt;p&gt;To mitigate this, I added a JavaScript method that mounts the plugin
-directory to WasmFS. After that libvlc_new is initiated and module loading
-begins.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Google Summer of Code Journey:  Hacking Libtool: Part 1]]></title><description><![CDATA[While working in VLC.js for VideoLAN in Google Summer of Code 2023, I came
+directory to WasmFS. After that libvlc_new is initiated and module
+loading begins.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Google Summer of Code Journey:  Hacking Libtool: Part 1]]></title><description><![CDATA[While working in VLC.js for VideoLAN in Google Summer of Code 2023, I came
 accross an interesting problem. You see VLC uses GNU Autotools to…]]></description><link>null/libtool/gsoc-libtool-part1/</link><guid isPermaLink="false">null/libtool/gsoc-libtool-part1/</guid><pubDate>Tue, 15 Aug 2023 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;While working in VLC.js for VideoLAN in Google Summer of Code 2023, I came
 accross an interesting problem. You see VLC uses GNU Autotools to
 create their compilation script, like most other C/C++ projects. The
