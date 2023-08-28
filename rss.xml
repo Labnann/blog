@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Gatsby Starter Blog RSS Feed]]></title><description><![CDATA[Just a place to store my blogs, for now]]></description><link>http://github.com/dylang/node-rss</link><generator>GatsbyJS</generator><lastBuildDate>Mon, 28 Aug 2023 17:18:19 GMT</lastBuildDate><item><title><![CDATA[Google Summer of Code - My work At VideoLAN]]></title><description><![CDATA[My work at Google Summer of Code, to simply explain is: enabling dynamic
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Gatsby Starter Blog RSS Feed]]></title><description><![CDATA[Just a place to store my blogs, for now]]></description><link>http://github.com/dylang/node-rss</link><generator>GatsbyJS</generator><lastBuildDate>Mon, 28 Aug 2023 19:00:56 GMT</lastBuildDate><item><title><![CDATA[Google Summer of Code - My work At VideoLAN]]></title><description><![CDATA[My work at Google Summer of Code, to simply explain is: enabling dynamic
 loading for wasm32-unknown-emscripten. To understand it, we need to…]]></description><link>null/gsoc/my-work-in-gsoc-at-videolan/</link><guid isPermaLink="false">null/gsoc/my-work-in-gsoc-at-videolan/</guid><pubDate>Sat, 26 Aug 2023 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;My work at Google Summer of Code, to simply explain is: enabling dynamic
 loading for wasm32-unknown-emscripten. To understand it, we need to delve
 into how VLC&apos;s plugins are loaded.&lt;/p&gt;
@@ -47,6 +47,39 @@ wasm32-emscripten. Which will cause module_loadPlugins to call
 AllocateAllPlugins which recursively looking for the modules in the
 given path passed via environment variables or other methods from the
 front end.&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 630px; &quot;
+    &gt;
+      &lt;a
+    class=&quot;gatsby-resp-image-link&quot;
+    href=&quot;/blog/static/a6f18102a0cb5a842c9e6485c69c2d44/764d7/vlc-plugin-loading.png&quot;
+    style=&quot;display: block&quot;
+    target=&quot;_blank&quot;
+    rel=&quot;noopener&quot;
+  &gt;
+    &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 44.30379746835443%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAJCAYAAAAywQxIAAAACXBIWXMAAAsTAAALEwEAmpwYAAABSklEQVR42o1S7W7EMAi793/OO205qWmbD5IQwBPpdfs7JIuIEtukPAyGlAa+XgfmlIV3yHi/C1QNHulkHPtALYy4dYyuOM+Gd6hozesDIRRQZTzMFDwMRAYzA09ByRNxq8i5gIhwHASqCplALQpmBZGgJIGKgdmQk2AMxUNVYQZ4FpnovaO1ipROxLgh54ze2xLzuHvve3f4d6/9Eprah1TWqLW6swP7viOlhFor5pwQ0f8ReqNfGGOs7M6cyAmP41wCzAyZ8k+H9ufQ3froTu75PNMScPCYi3gMXr037gk/hPaLq3mgNVo/pLWGUsoa2eEC1+iyMlFdfZdruwhF/M36InOCnAkp1XV2bNuOuB1IKaMUr3UQeeZFMkXRiDGnXmuTsyCEtgrMgvBNCKFCpq732SMjRhczhOBbIIix4fXyDfD3Hng+XYzxA1JQv25fgdiHAAAAAElFTkSuQmCC&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Sequence Diagram for VLC Module Loading&quot;
+        title=&quot;&quot;
+        src=&quot;/blog/static/a6f18102a0cb5a842c9e6485c69c2d44/f058b/vlc-plugin-loading.png&quot;
+        srcset=&quot;/blog/static/a6f18102a0cb5a842c9e6485c69c2d44/c26ae/vlc-plugin-loading.png 158w,
+/blog/static/a6f18102a0cb5a842c9e6485c69c2d44/6bdcf/vlc-plugin-loading.png 315w,
+/blog/static/a6f18102a0cb5a842c9e6485c69c2d44/f058b/vlc-plugin-loading.png 630w,
+/blog/static/a6f18102a0cb5a842c9e6485c69c2d44/40601/vlc-plugin-loading.png 945w,
+/blog/static/a6f18102a0cb5a842c9e6485c69c2d44/78612/vlc-plugin-loading.png 1260w,
+/blog/static/a6f18102a0cb5a842c9e6485c69c2d44/764d7/vlc-plugin-loading.png 1782w&quot;
+        sizes=&quot;(max-width: 630px) 100vw, 630px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+        decoding=&quot;async&quot;
+      /&gt;
+  &lt;/a&gt;
+    &lt;/span&gt;&lt;/p&gt;
 &lt;p&gt;Now to enable this I had to make changes into libtool to allow
 it inform it about how to &quot;compile&quot; shared modules.&lt;/p&gt;
 &lt;p&gt;While working on this, I came accross an interesting problem. You see
