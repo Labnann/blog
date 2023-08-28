@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Gatsby Starter Blog RSS Feed]]></title><description><![CDATA[Just a place to store my blogs, for now]]></description><link>http://github.com/dylang/node-rss</link><generator>GatsbyJS</generator><lastBuildDate>Mon, 28 Aug 2023 16:01:10 GMT</lastBuildDate><item><title><![CDATA[Google Summer of Code - My work At VideoLAN]]></title><description><![CDATA[My work at Google Summer of Code, to simply explain is: enabling dynamic
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Gatsby Starter Blog RSS Feed]]></title><description><![CDATA[Just a place to store my blogs, for now]]></description><link>http://github.com/dylang/node-rss</link><generator>GatsbyJS</generator><lastBuildDate>Mon, 28 Aug 2023 17:11:56 GMT</lastBuildDate><item><title><![CDATA[Google Summer of Code - My work At VideoLAN]]></title><description><![CDATA[My work at Google Summer of Code, to simply explain is: enabling dynamic
 loading for wasm32-unknown-emscripten. To understand it, we need to…]]></description><link>null/gsoc/my-work-in-gsoc-at-videolan/</link><guid isPermaLink="false">null/gsoc/my-work-in-gsoc-at-videolan/</guid><pubDate>Sat, 26 Aug 2023 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;My work at Google Summer of Code, to simply explain is: enabling dynamic
 loading for wasm32-unknown-emscripten. To understand it, we need to delve
 into how VLC&apos;s plugins are loaded.&lt;/p&gt;
@@ -147,15 +147,13 @@ to libtool?&lt;/p&gt;
 &lt;p&gt;For this we use the LT_TAGVAR method to modify archive_cmds. This simply
 edits the part of libtool that creates dynamic library archives to answer:
 &quot;Which parameters will I run to create the archive?&quot;&lt;/p&gt;
-&lt;p&gt;.. m4 ::
-_LT_TAGVAR(archive_cmds, $1)=&apos;-s SIDE_MODULE=1&apos;&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;  _LT_TAGVAR(archive_cmds, $1)=&apos;-s SIDE_MODULE=1&apos;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;Libtool has default way of naming each library archives and shared
 objects, which include, name, relese and extension. If we want we
 can change this default behavior by changing library_name_spec and
 soname_spec.&lt;/p&gt;
-&lt;p&gt;.. m4 ::
-library_names_spec=&apos;$libname$release$shared_ext&apos;
-soname_spec=&apos;$libname$release$shared_ext&apos;&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;   library_names_spec=&apos;$libname$release$shared_ext&apos;
+   soname_spec=&apos;$libname$release$shared_ext&apos;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;We can also tell libtool which command parameter is
 necessary for position independent code setting &lt;code class=&quot;language-text&quot;&gt;_LT_COMPILER_PIC&lt;/code&gt;. For
 our purpose, we  needed &lt;code class=&quot;language-text&quot;&gt;-fPIC&lt;/code&gt;. However, now, you can try inspecting
@@ -177,12 +175,11 @@ you as well ;).&lt;/p&gt;
 initiate compilation. Libtool will configure itself and put necessary
 flags for us. At this point everything compiled successfully, till the
 compilation of binaries. Then this error shows up:&lt;/p&gt;
-&lt;p&gt;.. log ::
-error: undefined symbol: libvlc_new (referenced by
-top-level compiled C/C++ code)
-warning: _libvlc_new may need to be added to
-EXPORTED_FUNCTIONS if it arrives from a system library&lt;br&gt;
-Here I just showed the error for libvlc_new function only. But this error
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;    error: undefined symbol: libvlc_new (referenced by 
+    top-level compiled C/C++ code) 
+    warning: _libvlc_new may need to be added to 
+    EXPORTED_FUNCTIONS if it arrives from a system library                                 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Here I just showed the error for libvlc_new function only. But this error
 occurs in case of all the functions that are exposed to the front end.&lt;/p&gt;
 &lt;p&gt;But why does it occur? Well during compilation of shared modules, some
 compilers demand another flag that tells which functions to be exported
@@ -231,7 +228,7 @@ while assigning a string. You can use it like this:&lt;/p&gt;
 &lt;code class=&quot;language-text&quot;&gt;$SED&lt;/code&gt; that can be used in the strings. During build this will be converted
 into a runnable &lt;code class=&quot;language-text&quot;&gt;sed&lt;/code&gt; command. &lt;code class=&quot;language-text&quot;&gt;$SED&lt;/code&gt; is same as &lt;code class=&quot;language-text&quot;&gt;sed&lt;/code&gt;, except it uses &lt;code class=&quot;language-text&quot;&gt;|&lt;/code&gt; in place of &lt;code class=&quot;language-text&quot;&gt;/&lt;/code&gt;.&lt;/p&gt;
 &lt;p&gt;So the final implementation becomes something like this:&lt;/p&gt;
-&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;_LT_TAGVAR(archive_expsym_cmds, $1)=&apos;$SED &quot;s|^|_|&quot; $export_symbols &gt;$output_objdir/$soname.expsym~$CC -sSIDE_MODULE=2 -shared $libobjs $deplibs $compiler_flags -o $lib -s EXPORTED_FUNCTIONS=@$output_objdir/$soname.expsy&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;_LT_TAGVAR(archive_expsym_cmds, $1)=&apos;$SED &quot;s|^|_|&quot; $export_symbols &gt;$output_objdir/$soname.expsym~$CC -sSIDE_MODULE=2 -shared $libobjs $deplibs $compiler_flags -o $lib -s EXPORTED_FUNCTIONS=@$output_objdir/$soname.expsym&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;To break down:&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;We take the input file with &lt;code class=&quot;language-text&quot;&gt;$export_symbols&lt;/code&gt;&lt;/li&gt;

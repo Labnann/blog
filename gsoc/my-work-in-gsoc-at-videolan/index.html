@@ -147,15 +147,13 @@ to libtool?</p>
 <p>For this we use the LT_TAGVAR method to modify archive_cmds. This simply
 edits the part of libtool that creates dynamic library archives to answer:
 "Which parameters will I run to create the archive?"</p>
-<p>.. m4 ::
-_LT_TAGVAR(archive_cmds, $1)='-s SIDE_MODULE=1'</p>
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">  _LT_TAGVAR(archive_cmds, $1)='-s SIDE_MODULE=1'</code></pre></div>
 <p>Libtool has default way of naming each library archives and shared
 objects, which include, name, relese and extension. If we want we
 can change this default behavior by changing library_name_spec and
 soname_spec.</p>
-<p>.. m4 ::
-library_names_spec='$libname$release$shared_ext'
-soname_spec='$libname$release$shared_ext'</p>
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">   library_names_spec='$libname$release$shared_ext'
+   soname_spec='$libname$release$shared_ext'</code></pre></div>
 <p>We can also tell libtool which command parameter is
 necessary for position independent code setting <code class="language-text">_LT_COMPILER_PIC</code>. For
 our purpose, we  needed <code class="language-text">-fPIC</code>. However, now, you can try inspecting
@@ -177,12 +175,11 @@ you as well ;).</p>
 initiate compilation. Libtool will configure itself and put necessary
 flags for us. At this point everything compiled successfully, till the
 compilation of binaries. Then this error shows up:</p>
-<p>.. log ::
-error: undefined symbol: libvlc_new (referenced by
-top-level compiled C/C++ code)
-warning: _libvlc_new may need to be added to
-EXPORTED_FUNCTIONS if it arrives from a system library<br>
-Here I just showed the error for libvlc_new function only. But this error
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">    error: undefined symbol: libvlc_new (referenced by 
+    top-level compiled C/C++ code) 
+    warning: _libvlc_new may need to be added to 
+    EXPORTED_FUNCTIONS if it arrives from a system library                                 </code></pre></div>
+<p>Here I just showed the error for libvlc_new function only. But this error
 occurs in case of all the functions that are exposed to the front end.</p>
 <p>But why does it occur? Well during compilation of shared modules, some
 compilers demand another flag that tells which functions to be exported
@@ -231,7 +228,7 @@ while assigning a string. You can use it like this:</p>
 <code class="language-text">$SED</code> that can be used in the strings. During build this will be converted
 into a runnable <code class="language-text">sed</code> command. <code class="language-text">$SED</code> is same as <code class="language-text">sed</code>, except it uses <code class="language-text">|</code> in place of <code class="language-text">/</code>.</p>
 <p>So the final implementation becomes something like this:</p>
-<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">_LT_TAGVAR(archive_expsym_cmds, $1)='$SED "s|^|_|" $export_symbols >$output_objdir/$soname.expsym~$CC -sSIDE_MODULE=2 -shared $libobjs $deplibs $compiler_flags -o $lib -s EXPORTED_FUNCTIONS=@$output_objdir/$soname.expsy</code></pre></div>
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">_LT_TAGVAR(archive_expsym_cmds, $1)='$SED "s|^|_|" $export_symbols >$output_objdir/$soname.expsym~$CC -sSIDE_MODULE=2 -shared $libobjs $deplibs $compiler_flags -o $lib -s EXPORTED_FUNCTIONS=@$output_objdir/$soname.expsym</code></pre></div>
 <p>To break down:</p>
 <ul>
 <li>We take the input file with <code class="language-text">$export_symbols</code></li>
