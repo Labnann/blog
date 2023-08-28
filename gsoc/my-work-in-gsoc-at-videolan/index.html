@@ -54,8 +54,7 @@ VLC uses GNU Autotools to create their compilation script, like most
 other C/C++ projects. The compilation process is simple, if all
 dependencies are installed.</p>
 <p>First you bootstrap with ./bootstrap
-Then you configure, with ./configure [--enable-params] [--disable-params]
-[other params]
+Then you configure, with ./configure [--enable-params] [--disable-params] [other params]
 And finally you compile, using GNU/Make, with the command 'make'.</p>
 <p>In the configure step, among various enable/disable parameters, there
 is one parameter called "shared". This allows the modules to be compiled
@@ -83,12 +82,12 @@ running with Emscripten in browser, hence we use this.</p>
 enabled. There has to be a check there, that makes sure that shared
 modules are enabled.  Opening the configure script and searching for
 "VLC is based on plugins", we indeed find the condition there:</p>
-<p>if test "${enable_shared}" = "no" -a "${enable_vlc}" != "no"</p>
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">if test "${enable_shared}" = "no" -a "${enable_vlc}" != "no"</code></pre></div>
 <p>So, something must have caused enable_shared to be no, But what is it?</p>
 <p>Something must have assigned enable_shared to be no, so let's search
 for "enable_shared=no", and just few lines before the above line, we
 find that:</p>
-<p>test no = "$can_build_shared" &#x26;&#x26; enable_shared=no</p>
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">test no = "$can_build_shared" &amp;&amp; enable_shared=no</code></pre></div>
 <p>So, the value of enable_shared came from can_build_shared, so now we
 search for "can_build_shared=no" to find out that its value came from
 the variable dynamic_linker. And it turns out the value of dynamic_linker
@@ -100,7 +99,7 @@ I am targetting, "emscripten".</p>
 <p>But the name, "Android linker" for android has to come from somewhere.
 The configure script itself is generated from various configure.am files
 when running the bootstrap script as mentioned earlier. So, I make a quick search:</p>
-<p>git grep -r "Android linker"</p>
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">git grep -r "Android linker"</code></pre></div>
 <p>Only to find nothing. So this value does not exist in the repository as
 a configuration file or anything, rather the value came from outside the
 repository. My mentor Alexandre Janniaux was very helpful to point out
@@ -136,10 +135,10 @@ now, I can try to figure out from the error and warning messages which
 compiler options should be removed and which are to be added.</p>
 <p>For example, at this stage, configuring with --enable-shared and
 compiling it gives the warning:</p>
-<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">emcc: warning: linking a library with `-shared` will emit a static 
-object file. This is a form of emulation to support existing build 
-systems.  If you want to build a runtime shared library use the 
-SIDE_MODULE setting. [-Wemcc]</code></pre></div>
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">    emcc: warning: linking a library with `-shared` will emit a static 
+    object file. This is a form of emulation to support existing build 
+    systems.  If you want to build a runtime shared library use the 
+    SIDE_MODULE setting. [-Wemcc]</code></pre></div>
 <p>Now from the documentation of emscripten we do find out that SIDE_MODULE
 is emscripten's way of compiling a code as shared module, as opposed
 to -shared. So, we have to use that instead. But how do we add this

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Gatsby Starter Blog RSS Feed]]></title><description><![CDATA[Just a place to store my blogs, for now]]></description><link>http://github.com/dylang/node-rss</link><generator>GatsbyJS</generator><lastBuildDate>Mon, 28 Aug 2023 17:11:56 GMT</lastBuildDate><item><title><![CDATA[Google Summer of Code - My work At VideoLAN]]></title><description><![CDATA[My work at Google Summer of Code, to simply explain is: enabling dynamic
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Gatsby Starter Blog RSS Feed]]></title><description><![CDATA[Just a place to store my blogs, for now]]></description><link>http://github.com/dylang/node-rss</link><generator>GatsbyJS</generator><lastBuildDate>Mon, 28 Aug 2023 17:18:19 GMT</lastBuildDate><item><title><![CDATA[Google Summer of Code - My work At VideoLAN]]></title><description><![CDATA[My work at Google Summer of Code, to simply explain is: enabling dynamic
 loading for wasm32-unknown-emscripten. To understand it, we need to…]]></description><link>null/gsoc/my-work-in-gsoc-at-videolan/</link><guid isPermaLink="false">null/gsoc/my-work-in-gsoc-at-videolan/</guid><pubDate>Sat, 26 Aug 2023 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;My work at Google Summer of Code, to simply explain is: enabling dynamic
 loading for wasm32-unknown-emscripten. To understand it, we need to delve
 into how VLC&apos;s plugins are loaded.&lt;/p&gt;
@@ -54,8 +54,7 @@ VLC uses GNU Autotools to create their compilation script, like most
 other C/C++ projects. The compilation process is simple, if all
 dependencies are installed.&lt;/p&gt;
 &lt;p&gt;First you bootstrap with ./bootstrap
-Then you configure, with ./configure [--enable-params] [--disable-params]
-[other params]
+Then you configure, with ./configure [--enable-params] [--disable-params] [other params]
 And finally you compile, using GNU/Make, with the command &apos;make&apos;.&lt;/p&gt;
 &lt;p&gt;In the configure step, among various enable/disable parameters, there
 is one parameter called &quot;shared&quot;. This allows the modules to be compiled
@@ -83,12 +82,12 @@ running with Emscripten in browser, hence we use this.&lt;/p&gt;
 enabled. There has to be a check there, that makes sure that shared
 modules are enabled.  Opening the configure script and searching for
 &quot;VLC is based on plugins&quot;, we indeed find the condition there:&lt;/p&gt;
-&lt;p&gt;if test &quot;${enable_shared}&quot; = &quot;no&quot; -a &quot;${enable_vlc}&quot; != &quot;no&quot;&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;if test &quot;${enable_shared}&quot; = &quot;no&quot; -a &quot;${enable_vlc}&quot; != &quot;no&quot;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;So, something must have caused enable_shared to be no, But what is it?&lt;/p&gt;
 &lt;p&gt;Something must have assigned enable_shared to be no, so let&apos;s search
 for &quot;enable_shared=no&quot;, and just few lines before the above line, we
 find that:&lt;/p&gt;
-&lt;p&gt;test no = &quot;$can_build_shared&quot; &amp;#x26;&amp;#x26; enable_shared=no&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;test no = &quot;$can_build_shared&quot; &amp;amp;&amp;amp; enable_shared=no&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;So, the value of enable_shared came from can_build_shared, so now we
 search for &quot;can_build_shared=no&quot; to find out that its value came from
 the variable dynamic_linker. And it turns out the value of dynamic_linker
@@ -100,7 +99,7 @@ I am targetting, &quot;emscripten&quot;.&lt;/p&gt;
 &lt;p&gt;But the name, &quot;Android linker&quot; for android has to come from somewhere.
 The configure script itself is generated from various configure.am files
 when running the bootstrap script as mentioned earlier. So, I make a quick search:&lt;/p&gt;
-&lt;p&gt;git grep -r &quot;Android linker&quot;&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;git grep -r &quot;Android linker&quot;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;Only to find nothing. So this value does not exist in the repository as
 a configuration file or anything, rather the value came from outside the
 repository. My mentor Alexandre Janniaux was very helpful to point out
@@ -136,10 +135,10 @@ now, I can try to figure out from the error and warning messages which
 compiler options should be removed and which are to be added.&lt;/p&gt;
 &lt;p&gt;For example, at this stage, configuring with --enable-shared and
 compiling it gives the warning:&lt;/p&gt;
-&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;emcc: warning: linking a library with `-shared` will emit a static 
-object file. This is a form of emulation to support existing build 
-systems.  If you want to build a runtime shared library use the 
-SIDE_MODULE setting. [-Wemcc]&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;    emcc: warning: linking a library with `-shared` will emit a static 
+    object file. This is a form of emulation to support existing build 
+    systems.  If you want to build a runtime shared library use the 
+    SIDE_MODULE setting. [-Wemcc]&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;Now from the documentation of emscripten we do find out that SIDE_MODULE
 is emscripten&apos;s way of compiling a code as shared module, as opposed
 to -shared. So, we have to use that instead. But how do we add this
