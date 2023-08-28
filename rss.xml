@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Gatsby Starter Blog RSS Feed]]></title><description><![CDATA[Just a place to store my blogs, for now]]></description><link>http://github.com/dylang/node-rss</link><generator>GatsbyJS</generator><lastBuildDate>Sun, 27 Aug 2023 18:55:18 GMT</lastBuildDate><item><title><![CDATA[Google Summer of Code - My work At VideoLAN]]></title><description><![CDATA[My work at Google Summer of Code, to simply explain is: enabling dynamic
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Gatsby Starter Blog RSS Feed]]></title><description><![CDATA[Just a place to store my blogs, for now]]></description><link>http://github.com/dylang/node-rss</link><generator>GatsbyJS</generator><lastBuildDate>Mon, 28 Aug 2023 16:01:10 GMT</lastBuildDate><item><title><![CDATA[Google Summer of Code - My work At VideoLAN]]></title><description><![CDATA[My work at Google Summer of Code, to simply explain is: enabling dynamic
 loading for wasm32-unknown-emscripten. To understand it, we need to…]]></description><link>null/gsoc/my-work-in-gsoc-at-videolan/</link><guid isPermaLink="false">null/gsoc/my-work-in-gsoc-at-videolan/</guid><pubDate>Sat, 26 Aug 2023 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;My work at Google Summer of Code, to simply explain is: enabling dynamic
 loading for wasm32-unknown-emscripten. To understand it, we need to delve
 into how VLC&apos;s plugins are loaded.&lt;/p&gt;
@@ -254,13 +254,81 @@ ready yet for this purpose. For example, EM_JS is not supported
 in emscripten shared modules. EM_JS is a macro that allows one to
 execute JavaScript inside web assembly. Also there are issues with
 linker in emscripten linker for compiling C++ sources with shared
-modules. Finally, emscripten&apos;s implementation of opendir only works
+modules.&lt;/p&gt;
+&lt;p&gt;Also there is a bug in emcc that, which leads it to &quot;forget&quot; which
+libraries are linked with it while compiling main module with shared
+modules if a shared module does not depend on other shared modules,
+but the other shared module depends on it. In this case: emcc simply
+forgets the shared modules that are passed to it with parameter.&lt;/p&gt;
+&lt;p&gt;A reproducer for this bug is available &lt;a href=&quot;https://code.videolan.org/Labnann/emscripten-library-forget-test&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;To fix this issue I looked into the &lt;code class=&quot;language-text&quot;&gt;process_dynamic_libs&lt;/code&gt; method that
+is called by emcc to resolve all the dynamic libraries and found out
+that there is a Breadth First Search of libraries that forgets to add
+root node to the visited or &lt;code class=&quot;language-text&quot;&gt;seen&lt;/code&gt;. So I solved this issue by marking
+the file as seen when being visited, IE: whenever popped from the queue
+in the BFS implementation.&lt;/p&gt;
+&lt;p&gt;Finally, emscripten&apos;s implementation of opendir only works
 with WasmFS. WasmFS is a virtual filesystem for file operations
 provided by emscripten. WasmFS is not linked with the server, so
 actual directory search is not conducted by opendir.&lt;/p&gt;
 &lt;p&gt;To mitigate this, I added a JavaScript method that mounts the plugin
-directory to WasmFS. After that libvlc_new is initiated and module
-loading begins.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Google Summer of Code Journey:  Hacking Libtool: Part 1]]></title><description><![CDATA[While working in VLC.js for VideoLAN in Google Summer of Code 2023, I came
+directory to WasmFS. The method named mountVLC is provided with a script\file named &lt;code class=&quot;language-text&quot;&gt;mountvlc.js&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Which calls the function recursivelyDownloadFiles(baseURL, directoryPath)
+method that downloads the files and directories and places them on the
+wasmFS recursively.&lt;/p&gt;
+&lt;p&gt;But how do we recreate the folder structure with files? Being a
+simple static http file server: It can not provide us with the information
+about the directory structure. So, from the front end we have know
+idea where to send the request to get the correct file.&lt;/p&gt;
+&lt;p&gt;But we do know, that if we send request to a particular valid directory
+we can have a list of files and directories as a html named Directory Listing
+document provided the directory does not have index.html.
+The filename and list can be found as inner text of &lt;code class=&quot;language-text&quot;&gt;&amp;lt;a&gt;&lt;/code&gt; tag or as
+value of href. Same is applied for directories, except, all directory
+strings end with /.&lt;/p&gt;
+&lt;p&gt;So, all we need is a regex, that can be used to strip away all the
+html and keep the file name and directories only.&lt;/p&gt;
+&lt;p&gt;Inspecting a HTML response, one can easilly tell that the href contains
+name of a particular directory of a file, so all we need is a regex that
+can do the job for us.&lt;/p&gt;
+&lt;p&gt;With the list of all the files and directories, now we can send
+fetch request to all of the files, and in case of directories
+(list element that ends with /) we can call FS.mkdir to create the path.&lt;/p&gt;
+&lt;p&gt;FS is a module that emscripten provides us to interact with the WasmFS.
+It has all the methods that makes it very easy to do file operations:
+like readFIle, writeFile, readdir etc.&lt;/p&gt;
+&lt;p&gt;To download a file, I used the fetch api provided by the browser.&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;async function downloadAndStore(url, path) {
+  const response = await fetch(url);
+  const content = await response.blob();
+  let data = new Uint8Array(await content.arrayBuffer());
+  FS.writeFile(path, data);
+}&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;You may be wondering, the data I just wrote into WasmFS, how am I so sure
+that this data was not altered. Like I used all the conversions of the
+data in the code above.&lt;/p&gt;
+&lt;p&gt;That is a valid question! So I created a sha256sum checker for WasmFS to
+test our download method. If the checksum of a downloaded matches with the
+one residing on the server, success!&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;async function calculateFileChecksum(filePath) {
+  const fileContent = await FS.readFile(filePath, {encoding:&apos;binary&apos;};
+  const buffer = new Uint8Array(fileContent).buffer;
+  const hashBuffer = await crypto.subtle.digest(&apos;SHA-256&apos;, buffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(byte =&gt; byte.toString(16).padStart(2, &apos;0&apos;)).join(&apos;&apos;);
+  return hashHex;
+}&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The browser provides us the sha256sum function, which can be called like this:
+crypto.subtle.digest(&apos;SHA-256&apos;, content)
+Yes it supports other algorithms for checksum as well! But I like sha256sum.
+So, we read the file from filepath as a binary, convert it into a Uint8Array
+as required by digest(). The output then needs to be converted from buffer
+to Uint8Array to JavaScript Array which can be used to convert the result to
+a hex string. You can read more about this in &lt;a href=&quot;https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest&quot;&gt;MDN&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;With this method I tested couple of binaries that matches with the sha256sum
+of the original file from the server.&lt;/p&gt;
+&lt;p&gt;And with that, the vlc.html is able to call libvlc_new and module loading
+begins!&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Google Summer of Code Journey:  Hacking Libtool: Part 1]]></title><description><![CDATA[While working in VLC.js for VideoLAN in Google Summer of Code 2023, I came
 accross an interesting problem. You see VLC uses GNU Autotools to…]]></description><link>null/libtool/gsoc-libtool-part1/</link><guid isPermaLink="false">null/libtool/gsoc-libtool-part1/</guid><pubDate>Tue, 15 Aug 2023 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;While working in VLC.js for VideoLAN in Google Summer of Code 2023, I came
 accross an interesting problem. You see VLC uses GNU Autotools to
 create their compilation script, like most other C/C++ projects. The
