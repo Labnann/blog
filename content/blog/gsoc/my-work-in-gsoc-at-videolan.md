@@ -338,14 +338,105 @@ ready yet for this purpose. For example, EM_JS is not supported
 in emscripten shared modules. EM_JS is a macro that allows one to
 execute JavaScript inside web assembly. Also there are issues with
 linker in emscripten linker for compiling C++ sources with shared 
-modules. Finally, emscripten's implementation of opendir only works
+modules. 
+
+Also there is a bug in emcc that, which leads it to "forget" which
+libraries are linked with it while compiling main module with shared
+modules if a shared module does not depend on other shared modules,
+but the other shared module depends on it. In this case: emcc simply
+forgets the shared modules that are passed to it with parameter.
+
+A reproducer for this bug is available [here](https://code.videolan.org/Labnann/emscripten-library-forget-test).
+
+To fix this issue I looked into the `process_dynamic_libs` method that 
+is called by emcc to resolve all the dynamic libraries and found out
+that there is a Breadth First Search of libraries that forgets to add
+root node to the visited or `seen`. So I solved this issue by marking
+the file as seen when being visited, IE: whenever popped from the queue
+in the BFS implementation.
+
+Finally, emscripten's implementation of opendir only works
 with WasmFS. WasmFS is a virtual filesystem for file operations 
 provided by emscripten. WasmFS is not linked with the server, so
 actual directory search is not conducted by opendir.
 
 To mitigate this, I added a JavaScript method that mounts the plugin
-directory to WasmFS. After that libvlc_new is initiated and module 
-loading begins.
+directory to WasmFS. The method named mountVLC is provided with a script\file named `mountvlc.js`.
+
+Which calls the function recursivelyDownloadFiles(baseURL, directoryPath)
+method that downloads the files and directories and places them on the
+wasmFS recursively.
+
+But how do we recreate the folder structure with files? Being a
+simple static http file server: It can not provide us with the information
+about the directory structure. So, from the front end we have know
+idea where to send the request to get the correct file.
+
+But we do know, that if we send request to a particular valid directory
+we can have a list of files and directories as a html named Directory Listing
+document provided the directory does not have index.html.
+The filename and list can be found as inner text of `<a>` tag or as
+value of href. Same is applied for directories, except, all directory 
+strings end with /.
+
+So, all we need is a regex, that can be used to strip away all the
+html and keep the file name and directories only. 
+
+Inspecting a HTML response, one can easilly tell that the href contains
+name of a particular directory of a file, so all we need is a regex that
+can do the job for us.
+
+With the list of all the files and directories, now we can send
+fetch request to all of the files, and in case of directories 
+(list element that ends with /) we can call FS.mkdir to create the path.
+
+FS is a module that emscripten provides us to interact with the WasmFS.
+It has all the methods that makes it very easy to do file operations:
+like readFIle, writeFile, readdir etc.
+
+To download a file, I used the fetch api provided by the browser. 
+
+```
+async function downloadAndStore(url, path) {
+  const response = await fetch(url);
+  const content = await response.blob();
+  let data = new Uint8Array(await content.arrayBuffer());
+  FS.writeFile(path, data);
+}
+```
+
+You may be wondering, the data I just wrote into WasmFS, how am I so sure
+that this data was not altered. Like I used all the conversions of the 
+data in the code above. 
+
+That is a valid question! So I created a sha256sum checker for WasmFS to
+test our download method. If the checksum of a downloaded matches with the
+one residing on the server, success!
+
+```
+async function calculateFileChecksum(filePath) {
+  const fileContent = await FS.readFile(filePath, {encoding:'binary'};
+  const buffer = new Uint8Array(fileContent).buffer;
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+```
+
+The browser provides us the sha256sum function, which can be called like this:
+crypto.subtle.digest('SHA-256', content)
+Yes it supports other algorithms for checksum as well! But I like sha256sum.
+So, we read the file from filepath as a binary, convert it into a Uint8Array
+as required by digest(). The output then needs to be converted from buffer
+to Uint8Array to JavaScript Array which can be used to convert the result to
+a hex string. You can read more about this in [MDN](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest).
+
+With this method I tested couple of binaries that matches with the sha256sum
+of the original file from the server.
+
+And with that, the vlc.html is able to call libvlc_new and module loading 
+begins!
 
 
 
