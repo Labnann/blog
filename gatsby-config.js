@@ -8,14 +8,14 @@
  * @type {import('gatsby').GatsbyConfig}
  */
 module.exports = {
+  pathPrefix:"/blog",
   siteMetadata: {
-    title: `Gatsby Starter Blog`,
+    title: `Labnan's Blog`,
     author: {
       name: `Labnan`,
       summary: `who enjoys coding silly things`,
     },
     description: `Just a place to store my blogs, for now`,
-    siteUrl: `https://labnan-blog.netlifycms.app`,
     social: {
       twitter: `Labnann`,
     },
