@@ -1,4 +1,44 @@
-<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Gatsby Starter Blog RSS Feed]]></title><description><![CDATA[Just a place to store my blogs, for now]]></description><link>http://github.com/dylang/node-rss</link><generator>GatsbyJS</generator><lastBuildDate>Mon, 28 Aug 2023 19:00:56 GMT</lastBuildDate><item><title><![CDATA[Google Summer of Code - My work At VideoLAN]]></title><description><![CDATA[My work at Google Summer of Code, to simply explain is: enabling dynamic
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Gatsby Starter Blog RSS Feed]]></title><description><![CDATA[Just a place to store my blogs, for now]]></description><link>http://github.com/dylang/node-rss</link><generator>GatsbyJS</generator><lastBuildDate>Thu, 22 Aug 2024 18:39:19 GMT</lastBuildDate><item><title><![CDATA[Google Summer of Code 2024: Interactive MKV]]></title><description><![CDATA[We all know what MKV is. It's a flexible and open standard Multimedia Container Format
+that we love and use to design audio, video, subtitle…]]></description><link>null/gsoc/gsoc24-interactive-mkv/</link><guid isPermaLink="false">null/gsoc/gsoc24-interactive-mkv/</guid><pubDate>Tue, 20 Aug 2024 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;We all know what MKV is. It&apos;s a flexible and open standard Multimedia Container Format
+that we love and use to design audio, video, subtitle tracks in a single file. Making
+it perfect for storing movies and TV shows with multiple audio tracks or subtitle tracks,
+making it ideal for storing multiple languages.&lt;/p&gt;
+&lt;p&gt;As the technology advances, so does our perception of entertainment. And there has been
+a surge of interactive multimedia. Unfortunately, there is no open standards defining
+a interactive multimedia should be implemented. Making it not only hard to create for
+a creative author who doesn&apos;t want to bother with lots of technological difficulties,
+but also it forces a device to depend on unnecessarily complex technologies due to the
+technical debt.&lt;/p&gt;
+&lt;p&gt;With these in mind, my mentor Steve L&apos;homme, the creator of Matroska and I went on a
+journey this summer 2024 to create an open standard to support interaction over MKV and
+an MKV Player that supports this standard over our favourite VLC Media Player. I will be
+describing that journey in this article.&lt;/p&gt;
+&lt;p&gt;The basic idea: MKV already has a way to define &quot;Chapters&quot; in a video. These chapters are
+the main pillars of this creation. A chapter lets us split a video into several segments.
+We have introduced MatroskaJS scripting for the &quot;entry&quot; and &quot;leave&quot; portion of these
+chapters. Therefore: at entry, a set of choices can be displayed to a user for the chapter&apos;s
+length of time, then according to the user&apos;s choice selection, &quot;leave&quot; script is executed.
+At that point, author can decide to control the flow of the video based on the user&apos;s choice.&lt;/p&gt;
+&lt;p&gt;We explored various JavaScript Engines to implement this. The acceptance criteria was how
+small the binary size is. After exploring QuickJS, MuJS, DuktapeJS and Hermes, we fixated
+on Duktape. But why JavaScript? Well, there was already a MatroskaScript defined in the current
+MKV specification with only one command GotoAndPlay, which is insufficient for interactive
+behavior. However, the specification gives a hint about the future: that it will be like
+ECMAScript with supports like commenting. Therefore, we came up with the version 2, the MatroskaJS
+to comply with this promise.&lt;/p&gt;
+&lt;p&gt;These are the two merge requests containing the project:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a href=&quot;https://code.videolan.org/videolan/vlc/-/merge_requests/5925&quot;&gt;https://code.videolan.org/videolan/vlc/-/merge_requests/5925&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a href=&quot;https://code.videolan.org/videolan/vlc/-/merge_requests/5619&quot;&gt;https://code.videolan.org/videolan/vlc/-/merge_requests/5619&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Here is Steve&apos;s part of the Merge Request regarding MatroskaJS:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/ietf-wg-cellar/matroska-specification/pull/835&quot;&gt;https://github.com/ietf-wg-cellar/matroska-specification/pull/835&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Apart from this, various bugs in the contribs is patched to make the VLC building process
+smoother.&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Google Summer of Code - My work At VideoLAN]]></title><description><![CDATA[My work at Google Summer of Code, to simply explain is: enabling dynamic
 loading for wasm32-unknown-emscripten. To understand it, we need to…]]></description><link>null/gsoc/my-work-in-gsoc-at-videolan/</link><guid isPermaLink="false">null/gsoc/my-work-in-gsoc-at-videolan/</guid><pubDate>Sat, 26 Aug 2023 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;My work at Google Summer of Code, to simply explain is: enabling dynamic
 loading for wasm32-unknown-emscripten. To understand it, we need to delve
 into how VLC&apos;s plugins are loaded.&lt;/p&gt;
@@ -47,39 +87,6 @@ wasm32-emscripten. Which will cause module_loadPlugins to call
 AllocateAllPlugins which recursively looking for the modules in the
 given path passed via environment variables or other methods from the
 front end.&lt;/p&gt;
-&lt;p&gt;&lt;span
-      class=&quot;gatsby-resp-image-wrapper&quot;
-      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 630px; &quot;
-    &gt;
-      &lt;a
-    class=&quot;gatsby-resp-image-link&quot;
-    href=&quot;/blog/static/a6f18102a0cb5a842c9e6485c69c2d44/764d7/vlc-plugin-loading.png&quot;
-    style=&quot;display: block&quot;
-    target=&quot;_blank&quot;
-    rel=&quot;noopener&quot;
-  &gt;
-    &lt;span
-    class=&quot;gatsby-resp-image-background-image&quot;
-    style=&quot;padding-bottom: 44.30379746835443%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAJCAYAAAAywQxIAAAACXBIWXMAAAsTAAALEwEAmpwYAAABSklEQVR42o1S7W7EMAi793/OO205qWmbD5IQwBPpdfs7JIuIEtukPAyGlAa+XgfmlIV3yHi/C1QNHulkHPtALYy4dYyuOM+Gd6hozesDIRRQZTzMFDwMRAYzA09ByRNxq8i5gIhwHASqCplALQpmBZGgJIGKgdmQk2AMxUNVYQZ4FpnovaO1ipROxLgh54ze2xLzuHvve3f4d6/9Eprah1TWqLW6swP7viOlhFor5pwQ0f8ReqNfGGOs7M6cyAmP41wCzAyZ8k+H9ufQ3froTu75PNMScPCYi3gMXr037gk/hPaLq3mgNVo/pLWGUsoa2eEC1+iyMlFdfZdruwhF/M36InOCnAkp1XV2bNuOuB1IKaMUr3UQeeZFMkXRiDGnXmuTsyCEtgrMgvBNCKFCpq732SMjRhczhOBbIIix4fXyDfD3Hng+XYzxA1JQv25fgdiHAAAAAElFTkSuQmCC&apos;); background-size: cover; display: block;&quot;
-  &gt;&lt;/span&gt;
-  &lt;img
-        class=&quot;gatsby-resp-image-image&quot;
-        alt=&quot;Sequence Diagram for VLC Module Loading&quot;
-        title=&quot;&quot;
-        src=&quot;/blog/static/a6f18102a0cb5a842c9e6485c69c2d44/f058b/vlc-plugin-loading.png&quot;
-        srcset=&quot;/blog/static/a6f18102a0cb5a842c9e6485c69c2d44/c26ae/vlc-plugin-loading.png 158w,
-/blog/static/a6f18102a0cb5a842c9e6485c69c2d44/6bdcf/vlc-plugin-loading.png 315w,
-/blog/static/a6f18102a0cb5a842c9e6485c69c2d44/f058b/vlc-plugin-loading.png 630w,
-/blog/static/a6f18102a0cb5a842c9e6485c69c2d44/40601/vlc-plugin-loading.png 945w,
-/blog/static/a6f18102a0cb5a842c9e6485c69c2d44/78612/vlc-plugin-loading.png 1260w,
-/blog/static/a6f18102a0cb5a842c9e6485c69c2d44/764d7/vlc-plugin-loading.png 1782w&quot;
-        sizes=&quot;(max-width: 630px) 100vw, 630px&quot;
-        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
-        loading=&quot;lazy&quot;
-        decoding=&quot;async&quot;
-      /&gt;
-  &lt;/a&gt;
-    &lt;/span&gt;&lt;/p&gt;
 &lt;p&gt;Now to enable this I had to make changes into libtool to allow
 it inform it about how to &quot;compile&quot; shared modules.&lt;/p&gt;
 &lt;p&gt;While working on this, I came accross an interesting problem. You see
@@ -87,7 +94,8 @@ VLC uses GNU Autotools to create their compilation script, like most
 other C/C++ projects. The compilation process is simple, if all
 dependencies are installed.&lt;/p&gt;
 &lt;p&gt;First you bootstrap with ./bootstrap
-Then you configure, with ./configure [--enable-params] [--disable-params] [other params]
+Then you configure, with ./configure [--enable-params] [--disable-params]
+[other params]
 And finally you compile, using GNU/Make, with the command &apos;make&apos;.&lt;/p&gt;
 &lt;p&gt;In the configure step, among various enable/disable parameters, there
 is one parameter called &quot;shared&quot;. This allows the modules to be compiled
@@ -115,12 +123,12 @@ running with Emscripten in browser, hence we use this.&lt;/p&gt;
 enabled. There has to be a check there, that makes sure that shared
 modules are enabled.  Opening the configure script and searching for
 &quot;VLC is based on plugins&quot;, we indeed find the condition there:&lt;/p&gt;
-&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;if test &quot;${enable_shared}&quot; = &quot;no&quot; -a &quot;${enable_vlc}&quot; != &quot;no&quot;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;if test &quot;${enable_shared}&quot; = &quot;no&quot; -a &quot;${enable_vlc}&quot; != &quot;no&quot;&lt;/p&gt;
 &lt;p&gt;So, something must have caused enable_shared to be no, But what is it?&lt;/p&gt;
 &lt;p&gt;Something must have assigned enable_shared to be no, so let&apos;s search
 for &quot;enable_shared=no&quot;, and just few lines before the above line, we
 find that:&lt;/p&gt;
-&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;test no = &quot;$can_build_shared&quot; &amp;amp;&amp;amp; enable_shared=no&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;test no = &quot;$can_build_shared&quot; &amp;#x26;&amp;#x26; enable_shared=no&lt;/p&gt;
 &lt;p&gt;So, the value of enable_shared came from can_build_shared, so now we
 search for &quot;can_build_shared=no&quot; to find out that its value came from
 the variable dynamic_linker. And it turns out the value of dynamic_linker
@@ -132,7 +140,7 @@ I am targetting, &quot;emscripten&quot;.&lt;/p&gt;
 &lt;p&gt;But the name, &quot;Android linker&quot; for android has to come from somewhere.
 The configure script itself is generated from various configure.am files
 when running the bootstrap script as mentioned earlier. So, I make a quick search:&lt;/p&gt;
-&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;git grep -r &quot;Android linker&quot;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;git grep -r &quot;Android linker&quot;&lt;/p&gt;
 &lt;p&gt;Only to find nothing. So this value does not exist in the repository as
 a configuration file or anything, rather the value came from outside the
 repository. My mentor Alexandre Janniaux was very helpful to point out
@@ -168,10 +176,10 @@ now, I can try to figure out from the error and warning messages which
 compiler options should be removed and which are to be added.&lt;/p&gt;
 &lt;p&gt;For example, at this stage, configuring with --enable-shared and
 compiling it gives the warning:&lt;/p&gt;
-&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;    emcc: warning: linking a library with `-shared` will emit a static 
-    object file. This is a form of emulation to support existing build 
-    systems.  If you want to build a runtime shared library use the 
-    SIDE_MODULE setting. [-Wemcc]&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;emcc: warning: linking a library with `-shared` will emit a static 
+object file. This is a form of emulation to support existing build 
+systems.  If you want to build a runtime shared library use the 
+SIDE_MODULE setting. [-Wemcc]&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;Now from the documentation of emscripten we do find out that SIDE_MODULE
 is emscripten&apos;s way of compiling a code as shared module, as opposed
 to -shared. So, we have to use that instead. But how do we add this
@@ -179,13 +187,15 @@ to libtool?&lt;/p&gt;
 &lt;p&gt;For this we use the LT_TAGVAR method to modify archive_cmds. This simply
 edits the part of libtool that creates dynamic library archives to answer:
 &quot;Which parameters will I run to create the archive?&quot;&lt;/p&gt;
-&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;  _LT_TAGVAR(archive_cmds, $1)=&apos;-s SIDE_MODULE=1&apos;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;.. m4 ::
+_LT_TAGVAR(archive_cmds, $1)=&apos;-s SIDE_MODULE=1&apos;&lt;/p&gt;
 &lt;p&gt;Libtool has default way of naming each library archives and shared
 objects, which include, name, relese and extension. If we want we
 can change this default behavior by changing library_name_spec and
 soname_spec.&lt;/p&gt;
-&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;   library_names_spec=&apos;$libname$release$shared_ext&apos;
-   soname_spec=&apos;$libname$release$shared_ext&apos;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;.. m4 ::
+library_names_spec=&apos;$libname$release$shared_ext&apos;
+soname_spec=&apos;$libname$release$shared_ext&apos;&lt;/p&gt;
 &lt;p&gt;We can also tell libtool which command parameter is
 necessary for position independent code setting &lt;code class=&quot;language-text&quot;&gt;_LT_COMPILER_PIC&lt;/code&gt;. For
 our purpose, we  needed &lt;code class=&quot;language-text&quot;&gt;-fPIC&lt;/code&gt;. However, now, you can try inspecting
@@ -207,11 +217,12 @@ you as well ;).&lt;/p&gt;
 initiate compilation. Libtool will configure itself and put necessary
 flags for us. At this point everything compiled successfully, till the
 compilation of binaries. Then this error shows up:&lt;/p&gt;
-&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;    error: undefined symbol: libvlc_new (referenced by 
-    top-level compiled C/C++ code) 
-    warning: _libvlc_new may need to be added to 
-    EXPORTED_FUNCTIONS if it arrives from a system library                                 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Here I just showed the error for libvlc_new function only. But this error
+&lt;p&gt;.. log ::
+error: undefined symbol: libvlc_new (referenced by
+top-level compiled C/C++ code)
+warning: _libvlc_new may need to be added to
+EXPORTED_FUNCTIONS if it arrives from a system library&lt;br&gt;
+Here I just showed the error for libvlc_new function only. But this error
 occurs in case of all the functions that are exposed to the front end.&lt;/p&gt;
 &lt;p&gt;But why does it occur? Well during compilation of shared modules, some
 compilers demand another flag that tells which functions to be exported
@@ -260,7 +271,7 @@ while assigning a string. You can use it like this:&lt;/p&gt;
 &lt;code class=&quot;language-text&quot;&gt;$SED&lt;/code&gt; that can be used in the strings. During build this will be converted
 into a runnable &lt;code class=&quot;language-text&quot;&gt;sed&lt;/code&gt; command. &lt;code class=&quot;language-text&quot;&gt;$SED&lt;/code&gt; is same as &lt;code class=&quot;language-text&quot;&gt;sed&lt;/code&gt;, except it uses &lt;code class=&quot;language-text&quot;&gt;|&lt;/code&gt; in place of &lt;code class=&quot;language-text&quot;&gt;/&lt;/code&gt;.&lt;/p&gt;
 &lt;p&gt;So the final implementation becomes something like this:&lt;/p&gt;
-&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;_LT_TAGVAR(archive_expsym_cmds, $1)=&apos;$SED &quot;s|^|_|&quot; $export_symbols &gt;$output_objdir/$soname.expsym~$CC -sSIDE_MODULE=2 -shared $libobjs $deplibs $compiler_flags -o $lib -s EXPORTED_FUNCTIONS=@$output_objdir/$soname.expsym&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;text&quot;&gt;&lt;pre class=&quot;language-text&quot;&gt;&lt;code class=&quot;language-text&quot;&gt;_LT_TAGVAR(archive_expsym_cmds, $1)=&apos;$SED &quot;s|^|_|&quot; $export_symbols &gt;$output_objdir/$soname.expsym~$CC -sSIDE_MODULE=2 -shared $libobjs $deplibs $compiler_flags -o $lib -s EXPORTED_FUNCTIONS=@$output_objdir/$soname.expsy&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;To break down:&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;We take the input file with &lt;code class=&quot;language-text&quot;&gt;$export_symbols&lt;/code&gt;&lt;/li&gt;
