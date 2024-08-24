@@ -38,7 +38,7 @@ the "script" interpreter implementation, and created a MatroskaJS interpreter
 implementation related classes. Both of them are connected via the <code class="language-text">matroska segment parser</code>.
 The segment parser binds the right interpreter based on "ChapProcessCodecID".</p>
 <h2>The JavaScript Frontend</h2>
-<p>Due to the nature of JavaScript Egnines, we decided to create two types of functions:</p>
+<p>Due to the nature of JavaScript Engines, we decided to create two types of functions:</p>
 <ul>
 <li>Functions named like js_execute_CommandName. These functions are pushable to the duktape api,</li>
 </ul>
@@ -51,7 +51,7 @@ the typechecking and pass it to:</p>
 backend.</p>
 <h2>Handling The Choice Display</h2>
 <p>Using VLC Subpicture API, we created buttons for each choices.</p>
-<p><strong>TODO: ADD  A PICTURE OF TESTING MKV CHOICES</strong></p>
+<p><img src="https://raw.githubusercontent.com/Labnann/blog/main/static/img/gsoc24-interactive-mkv-test.png" alt="ChoiceButton"></p>
 <p>The implementation is something like: create a button at the start
 of the chapter if the user has signalled it via the CommitChoices()</p>
 <p>command. Then, if the button states are changed, for example: if user
