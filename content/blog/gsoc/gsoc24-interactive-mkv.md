@@ -54,7 +54,7 @@ The segment parser binds the right interpreter based on "ChapProcessCodecID".
 The JavaScript Frontend
 ------------------------
 
-Due to the nature of JavaScript Egnines, we decided to create two types of functions:
+Due to the nature of JavaScript Engines, we decided to create two types of functions:
 
 - Functions named like js_execute_CommandName. These functions are pushable to the duktape api,
 and user scripts have the ability to access these functions. In these functions we handle
@@ -69,7 +69,7 @@ Handling The Choice Display
 
 Using VLC Subpicture API, we created buttons for each choices.
 
-**TODO: ADD  A PICTURE OF TESTING MKV CHOICES** 
+![ChoiceButton](https://raw.githubusercontent.com/Labnann/blog/main/static/img/gsoc24-interactive-mkv-test.png)
 
 The implementation is something like: create a button at the start
 of the chapter if the user has signalled it via the CommitChoices()
